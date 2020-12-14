@@ -1,5 +1,23 @@
 {
+  "name": "decus-sol",
+  "version": "0.0.1",
+  "description": "decus solidity contract\r ==============",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^3.2.0"
-  }
+  },
+  "devDependencies": {
+    "@openzeppelin/test-environment": "^0.1.7",
+    "@openzeppelin/test-helpers": "^0.5.9",
+    "chai": "^4.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "decus",
+  "license": "MIT"
 }

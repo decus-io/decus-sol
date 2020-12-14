@@ -3,4 +3,7 @@ node_modules
 yarn-error.log
 .vscode
 .DS_Store
+.idea/*
 
+/contracts/artifacts
+/build

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract DecusToken is ERC20, AccessControl {
 
-    string private constant _name = "Decus Token";
+    string private constant _name = "DeCus Token";
     string private constant _symbol = "DCS";
 
     uint256 public constant INITIAL_SUPPLY = 1000000000 * 10**uint256(18);

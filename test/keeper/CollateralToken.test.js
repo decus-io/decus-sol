@@ -41,4 +41,8 @@ contract('CollateralToken', (accounts) => {
     describe('role transfer', () => {
         // TODO:
     });
+
+    describe('owner transfer', () => {
+        // TODO:
+    });
 });

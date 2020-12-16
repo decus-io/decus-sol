@@ -2,13 +2,17 @@
 pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {CollateralToken} from "../keeper/CollateralToken.sol";
 import {CollateralMeta} from "../keeper/CollateralMeta.sol";
+import {IKeeperImport} from "../interface/IKeeperImport.sol";
 
 
-contract KeeperSystem is AccessControl {
+contract KeeperSystem is AccessControl, IKeeperImport {
+    using SafeMath for uint256;
+
     // events
     event KeeperCreated(address indexed keeper, uint256 indexed tokenId, address[] btc, uint256[] amount);
 
@@ -25,6 +29,7 @@ contract KeeperSystem is AccessControl {
         uint256 nft_id;
         bool exists;
     }
+
 
     // const
     bytes32 public constant KEEPER_ADMIN_ROLE = keccak256("KEEPER_ADMIN_ROLE");
@@ -57,18 +62,24 @@ contract KeeperSystem is AccessControl {
 
     function addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) external {
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
+        require(_assets.length == _amounts.length, "length not match");
 
+        // transfer assets
+        for (uint i = 0; i < _assets.length; i++) {
+            require(IERC20(_assets[i]).transferFrom(_keeper, address(this), _amounts[i]), "transfer failed");
+        }
+
+        _addKeeper(_keeper, _assets, _amounts);
+    }
+
+    function _addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) internal {
         // only allow one nft per keeper
         require(collateral_token.balanceOf(_keeper) == 0, "keeper existed");
 
-        // sanity check
-        require(_assets.length == _amounts.length, "length not match");
-
-        // 1. transfer btc to this account 2. save btc info
         KeeperCollateral storage keeper = keeper_collateral[_keeper];
-        for (uint8 i = 0; i < _assets.length; i++) {
-            require(ERC20(_assets[i]).transferFrom(_keeper, address(this), _amounts[i]), "transfer failed");
-            uint _index = _addCollateral(_assets[i], _amounts[i]);
+        for (uint i = 0; i < _assets.length; i++) {
+            uint256 _index = collaterals.length;
+            collaterals.push(Collateral(_assets[i], _amounts[i]));
             keeper.indexes.push(_index);
         }
 
@@ -78,14 +89,40 @@ contract KeeperSystem is AccessControl {
         emit KeeperCreated(_keeper, _id, _assets, _amounts);
     }
 
-    function _addCollateral(address _asset, uint256 _amount) internal returns (uint256) {
-        uint256 index = collaterals.length;
-        collaterals.push(Collateral(_asset, _amount));
-        return index;
-    }
+    function importKeepers(address _from, address[] calldata _assets, uint256[] calldata _amounts,
+        address[] calldata _keepers, uint256[] calldata _keeper_amounts) external override returns (bool success) {
+        require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
+        require(_assets.length == _amounts.length, "length not match");
 
-    //    function addKeeperBatch() external {
-    //        // TODO: 0. correct input param 1. transfer btc in batch. 2. save keeper info
-    //    }
+        uint256 _keeper_num = _keepers.length;
+        uint256 _asset_num = _assets.length;
+
+        require(_keeper_amounts.length == _asset_num.mul(_keeper_num), "amounts length does not match");
+
+        // check amounts match
+        uint256[] memory _sum_amounts = new uint256[](_asset_num);
+        for (uint i = 0; i < _keeper_num; i++) {
+            uint256 base = i.mul(_asset_num);
+            for (uint j = 0; j < _asset_num; j++) {
+                _sum_amounts[j] = _sum_amounts[j].add(_keeper_amounts[base + j]);
+            }
+        }
+        for (uint i = 0; i < _asset_num; i++) {
+            require(_amounts[i] == _sum_amounts[i], "amounts do not match");
+        }
+
+        // transfer
+        for (uint8 i = 0; i < _asset_num; i++) {
+            require(IERC20(_assets[i]).transferFrom(_from, address(this), _amounts[i]), "transfer failed");
+        }
+
+        // add keeper
+        for (uint i = 0; i < _keeper_num; i++) {
+            uint256 base = i.mul(_asset_num);
+            _addKeeper(_keepers[i], _assets, _keeper_amounts[base : base + _asset_num]);
+        }
+
+        return true;
+    }
 
 }

@@ -25,7 +25,7 @@ contract('CollateralToken', (accounts) => {
         it('minter can mint', async () => {
             const tokenId = new BN('0');
             const receipt = await this.token.mint(user1, {from: minter});
-            expectEvent(receipt, 'Transfer', { from: ZERO_ADDRESS, to: user1, tokenId });
+            expectEvent(receipt, 'Transfer', { from: ZERO_ADDRESS, to: user1, tokenId: tokenId });
 
             expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('1');
             expect(await this.token.ownerOf(tokenId)).to.equal(user1);

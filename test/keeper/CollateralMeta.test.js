@@ -26,7 +26,7 @@ contract('CollateralMeta', (accounts) => {
 
     it('other', async() => {
         expect(await this.meta.exists(this.other.address)).to.be.false;
-        expectRevert(this.meta.getDivisor(this.other.address), "not supported collateral asset");
+        await expectRevert(this.meta.getDivisor(this.other.address), "not supported collateral asset");
     })
 
 });

@@ -12,7 +12,7 @@ const CollateralMeta = artifacts.require("CollateralMeta");
 
 
 contract('KeeperSystem', (accounts) => {
-    const [owner, keeper_admin, user1, user2] = accounts;
+    const [owner, keeper_admin, user1, user2, auction] = accounts;
 
     // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -55,12 +55,12 @@ contract('KeeperSystem', (accounts) => {
             {token: this.collateral_token.address, meta: this.collateral_meta.address});
     })
 
-    describe('new keeper', () => {
+    describe('one keeper', () => {
         beforeEach(async () => {
             await this.keeper_system.setDependencies(this.collateral_token.address, this.collateral_meta.address, {from: owner})
         });
 
-        it('create', async() => {
+        it('add', async() => {
             const tokenId = new BN(0);
             const amount = new BN(500);
 
@@ -72,7 +72,52 @@ contract('KeeperSystem', (accounts) => {
             // expected event argument 'amount' to have value 50000 but got 50000
 //            expectEvent(receipt, 'KeeperCreated', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address], amount: [amount]});
 
+            // TODO: check keeper record
+
             // TODO: check remaining amount
+        })
+
+        it('dup keeper', async() => {
+        })
+
+        it('input param check', async() => {
+        })
+
+        it('insufficient allowance', async() => {
+        })
+
+        it('remove keeper', async() => {
+        })
+    });
+
+    describe('import keepers', () => {
+        beforeEach(async () => {
+            await this.keeper_system.setDependencies(this.collateral_token.address, this.collateral_meta.address, {from: owner})
+
+            await this.hbtc.mint(auction, new BN(1000000));
+            await this.wbtc.mint(auction, new BN(1000000));
+        });
+
+        it('import', async() => {
+            const allowance = new BN(10000);
+            this.hbtc.approve(this.keeper_system.address, allowance, {from: auction});
+            this.wbtc.approve(this.keeper_system.address, allowance, {from: auction});
+
+            const u1_wbtc = new BN(100);
+            const u1_hbtc = new BN(200);
+
+            const u2_wbtc = new BN(300);
+            const u2_hbtc = new BN(0);
+
+            const all_wbtc = u1_wbtc.add(u2_wbtc);
+            const all_hbtc = u1_hbtc.add(u2_hbtc);
+
+            const rsp = await this.keeper_system.importKeepers(auction, [this.wbtc.address, this.hbtc.address], [all_wbtc, all_hbtc],
+                [user1, user2], [u1_wbtc, u1_hbtc, u2_wbtc, u2_hbtc], {from: keeper_admin});
+
+            // TODO: check keeper record
+
+            // TODO: check remaining amt
         })
     });
 

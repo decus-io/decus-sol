@@ -10,6 +10,7 @@ import {CollateralLib} from "./CollateralLib.sol";
 
 contract CollateralMeta {
     using SafeMath for uint256;
+
     mapping(address => CollateralLib.AssetInfo) public assets;
 
     constructor(address[] memory _assets) public {

@@ -38,6 +38,24 @@ contract('CollateralToken', (accounts) => {
         });
     });
 
+    describe('nft transfer', () => {
+        beforeEach(async () => {
+            await this.token.mint(user1, {from: minter});
+        });
+
+        it('tokenid', async () => {
+            const tokenId = new BN('0');
+            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('1');
+            expect(await this.token.ownerOf(tokenId)).to.equal(user1);
+
+            await this.token.approve(user2, tokenId, {from: user1});
+            await this.token.transferFrom(user1, user2, tokenId, {from: user1});
+
+            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('0');
+            expect(await this.token.ownerOf(tokenId)).to.equal(user2);
+        });
+    });
+
     describe('role transfer', () => {
         // TODO:
     });

@@ -56,22 +56,23 @@ contract('KeeperSystem', (accounts) => {
     })
 
     describe('one keeper', () => {
+        const tokenId = new BN(0);
+        const amount = new BN(500);
+
         beforeEach(async () => {
             await this.keeper_system.setDependencies(this.collateral_token.address, this.collateral_meta.address, {from: owner})
+            await this.hbtc.approve(this.keeper_system.address, amount, {from: user1});
         });
 
         it('add', async() => {
-            const tokenId = new BN(0);
-            const amount = new BN(500);
-
-            this.hbtc.approve(this.keeper_system.address, amount, {from: user1});
             const receipt = await this.keeper_system.addKeeper(user1, [this.hbtc.address], [amount], {from: keeper_admin});
-
-            expectEvent(receipt, 'KeeperCreated', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address]});
+            expectEvent(receipt, 'KeeperAdded', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address]});
             // TODO: not sure why amount couldn't pass test, shown as below
             // expected event argument 'amount' to have value 50000 but got 50000
-//            expectEvent(receipt, 'KeeperCreated', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address], amount: [amount]});
+//            expectEvent(receipt, 'KeeperAdded', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address], amount: [amount]});
 
+            expect(await this.collateral_token.ownerOf(tokenId)).to.equal(user1);
+            expect(await this.keeper_system.contain_id(tokenId)).to.be.true;
             // TODO: check keeper record
 
             // TODO: check remaining amount
@@ -86,8 +87,21 @@ contract('KeeperSystem', (accounts) => {
         it('insufficient allowance', async() => {
         })
 
-        it('remove keeper', async() => {
-        })
+        describe('remove', () => {
+            beforeEach(async () => {
+                await this.keeper_system.addKeeper(user1, [this.hbtc.address], [amount], {from: keeper_admin});
+            });
+            it('remove success', async() => {
+                this.collateral_token.approve(this.keeper_system.address, tokenId, {from: user1});
+                const receipt = await this.keeper_system.deleteKeeper(tokenId, {from: keeper_admin});
+                expectEvent(receipt, 'KeeperDeleted', {keeper: user1, tokenId: tokenId});
+            })
+            it('remove fail', async() => {
+                await expectRevert(this.keeper_system.deleteKeeper(tokenId, {from: keeper_admin}),
+                    'ERC721Burnable: caller is not owner nor approved.');
+            })
+            // TODO: other fail cases
+        });
     });
 
     describe('import keepers', () => {
@@ -100,8 +114,8 @@ contract('KeeperSystem', (accounts) => {
 
         it('import', async() => {
             const allowance = new BN(10000);
-            this.hbtc.approve(this.keeper_system.address, allowance, {from: auction});
-            this.wbtc.approve(this.keeper_system.address, allowance, {from: auction});
+            await this.hbtc.approve(this.keeper_system.address, allowance, {from: auction});
+            await this.wbtc.approve(this.keeper_system.address, allowance, {from: auction});
 
             const u1_wbtc = new BN(100);
             const u1_hbtc = new BN(200);

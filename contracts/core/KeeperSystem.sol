@@ -7,28 +7,20 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {CollateralToken} from "../keeper/CollateralToken.sol";
 import {CollateralMeta} from "../keeper/CollateralMeta.sol";
+import {CollateralLib} from "../keeper/CollateralLib.sol";
 import {IKeeperImport} from "../interface/IKeeperImport.sol";
 
 
 contract KeeperSystem is AccessControl, IKeeperImport {
     using SafeMath for uint256;
+    using CollateralLib for CollateralLib.CollateralMap;
 
     // events
-    event KeeperCreated(address indexed keeper, uint256 indexed tokenId, address[] btc, uint256[] amount);
+    event KeeperAdded(address indexed keeper, uint256 indexed tokenId, address[] btc, uint256[] amount);
+
+    event KeeperDeleted(address indexed keeper, uint256 indexed tokenId);
 
     event DependenciesSet(address indexed token, address indexed meta);
-
-    // struct
-    struct Collateral {
-        address asset;
-        uint256 amount;
-    }
-
-    struct KeeperCollateral {
-        uint256[] indexes;
-        uint256 nft_id;
-        bool exists;
-    }
 
 
     // const
@@ -38,11 +30,14 @@ contract KeeperSystem is AccessControl, IKeeperImport {
     // var
     CollateralToken collateral_token;
     CollateralMeta collateral_meta;
-    Collateral[] public collaterals;
-    mapping(address => KeeperCollateral) public keeper_collateral;
+    CollateralLib.CollateralMap keeper_collaterals;
 
+    // view func
+    function contain_id(uint256 _id) public view returns (bool) {
+        return keeper_collaterals.contain_id(_id);
+    }
 
-    //func
+    // write func
     constructor(address admin, address keeper_admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
 
@@ -62,7 +57,6 @@ contract KeeperSystem is AccessControl, IKeeperImport {
 
     function addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) external {
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
-        require(_assets.length == _amounts.length, "length not match");
 
         // transfer assets
         for (uint i = 0; i < _assets.length; i++) {
@@ -72,21 +66,16 @@ contract KeeperSystem is AccessControl, IKeeperImport {
         _addKeeper(_keeper, _assets, _amounts);
     }
 
-    function _addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) internal {
-        // only allow one nft per keeper
-        require(collateral_token.balanceOf(_keeper) == 0, "keeper existed");
+    function deleteKeeper(uint256 _id) external {
+        require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
 
-        KeeperCollateral storage keeper = keeper_collateral[_keeper];
-        for (uint i = 0; i < _assets.length; i++) {
-            uint256 _index = collaterals.length;
-            collaterals.push(Collateral(_assets[i], _amounts[i]));
-            keeper.indexes.push(_index);
-        }
+        address _keeper = collateral_token.ownerOf(_id);
 
-        uint256 _id = collateral_token.mint(_keeper);
-        keeper.nft_id = _id;
+        keeper_collaterals.deleteKeeper(_id, _keeper);
 
-        emit KeeperCreated(_keeper, _id, _assets, _amounts);
+        collateral_token.burn(_id);
+
+        emit KeeperDeleted(_keeper, _id);
     }
 
     function importKeepers(address _from, address[] calldata _assets, uint256[] calldata _amounts,
@@ -123,6 +112,17 @@ contract KeeperSystem is AccessControl, IKeeperImport {
         }
 
         return true;
+    }
+
+    function _addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) private {
+        // only allow one nft per keeper
+        require(collateral_token.balanceOf(_keeper) == 0, "keeper existed");
+
+        uint256 _id = collateral_token.mint(_keeper);
+
+        keeper_collaterals.addKeeper(_id, _assets, _amounts);
+
+        emit KeeperAdded(_keeper, _id, _assets, _amounts);
     }
 
 }

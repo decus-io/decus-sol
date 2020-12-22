@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
+import {AssetMeta} from "../core/AssetMeta.sol";
 import {CollateralToken} from "../keeper/CollateralToken.sol";
-import {CollateralMeta} from "../keeper/CollateralMeta.sol";
 import {CollateralLib} from "../keeper/CollateralLib.sol";
 import {IKeeperImport} from "../interface/IKeeperImport.sol";
 
@@ -29,12 +29,12 @@ contract KeeperSystem is AccessControl, IKeeperImport {
 
     // var
     CollateralToken collateral_token;
-    CollateralMeta collateral_meta;
+    AssetMeta collateral_meta;
     CollateralLib.CollateralMap keeper_collaterals;
 
     // view func
-    function contain_id(uint256 _id) public view returns (bool) {
-        return keeper_collaterals.contain_id(_id);
+    function containId(uint256 _id) public view returns (bool) {
+        return keeper_collaterals.containId(_id);
     }
 
     // write func
@@ -46,7 +46,7 @@ contract KeeperSystem is AccessControl, IKeeperImport {
         _setupRole(KEEPER_ADMIN_ROLE, keeper_admin);
     }
 
-    function setDependencies(CollateralToken _token, CollateralMeta _meta) external {
+    function setDependencies(CollateralToken _token, AssetMeta _meta) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         collateral_token = _token;
@@ -120,7 +120,7 @@ contract KeeperSystem is AccessControl, IKeeperImport {
 
         uint256 _id = collateral_token.mint(_keeper);
 
-        keeper_collaterals.addKeeper(_id, _assets, _amounts);
+        keeper_collaterals.addKeeper(_id, _assets, _amounts, collateral_meta);
 
         emit KeeperAdded(_keeper, _id, _assets, _amounts);
     }

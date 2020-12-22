@@ -8,7 +8,7 @@ const OtherCoin = artifacts.require("OtherCoin");
 
 const KeeperSystem = artifacts.require("KeeperSystem");
 const CollateralToken = artifacts.require("CollateralToken");
-const CollateralMeta = artifacts.require("CollateralMeta");
+const AssetMeta = artifacts.require("AssetMeta");
 
 
 contract('KeeperSystem', (accounts) => {
@@ -30,7 +30,7 @@ contract('KeeperSystem', (accounts) => {
         this.wbtc = await WBTC.new();
         this.other = await OtherCoin.new();
 
-        this.collateral_meta = await CollateralMeta.new([this.hbtc.address, this.wbtc.address]);
+        this.collateral_meta = await AssetMeta.new([this.hbtc.address, this.wbtc.address]);
 
         await this.hbtc.mint(user1, hbtc_holding);
         await this.wbtc.mint(user1, wbtc_holding);
@@ -72,7 +72,7 @@ contract('KeeperSystem', (accounts) => {
 //            expectEvent(receipt, 'KeeperAdded', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address], amount: [amount]});
 
             expect(await this.collateral_token.ownerOf(tokenId)).to.equal(user1);
-            expect(await this.keeper_system.contain_id(tokenId)).to.be.true;
+            expect(await this.keeper_system.containId(tokenId)).to.be.true;
             // TODO: check keeper record
 
             // TODO: check remaining amount
@@ -92,7 +92,7 @@ contract('KeeperSystem', (accounts) => {
                 await this.keeper_system.addKeeper(user1, [this.hbtc.address], [amount], {from: keeper_admin});
             });
             it('remove success', async() => {
-                this.collateral_token.approve(this.keeper_system.address, tokenId, {from: user1});
+                await this.collateral_token.approve(this.keeper_system.address, tokenId, {from: user1});
                 const receipt = await this.keeper_system.deleteKeeper(tokenId, {from: keeper_admin});
                 expectEvent(receipt, 'KeeperDeleted', {keeper: user1, tokenId: tokenId});
             })

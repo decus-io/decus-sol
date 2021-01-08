@@ -40,10 +40,6 @@ contract DeCusSystem is AccessControl, Pausable {
         receiptFactory.addReceipt(_msgSender(), _groupId, _amountInSatoshi);
     }
 
-    function cancelMintRequest(uint256 _groupId, string memory _proofKeepers) public {
-
-    }
-
     function verifyMint(string memory _proofPlaceholder, uint256 _groupId) public {
         _verifyDeposit(_proofPlaceholder, _groupId);
 
@@ -52,8 +48,12 @@ contract DeCusSystem is AccessControl, Pausable {
         _mintToUser(_groupId);
     }
 
-    function mistakeMint(uint256 _groupId) payable {
+    function revokeMintRequest(uint256 _groupId, string memory _proofKeepers) public {
+        // TODO: Originated from keepers, to revoke an unfinished request
+    }
 
+    function cancelMintRequest(uint256 _groupId) payable public {
+        // TODO: Originated from users, before verifyMint to cancel the btc deposit
     }
 
     function _verifyDeposit(string memory _proofPlaceholder, uint256 _groupId) internal {

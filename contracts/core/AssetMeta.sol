@@ -11,7 +11,6 @@ import {IAssetMeta} from "../interface/IAssetMeta.sol";
 
 contract AssetMeta is IAssetMeta {
     using SafeMath for uint256;
-    using BTCUtils for uint256;
 
     // struct
     struct Asset {

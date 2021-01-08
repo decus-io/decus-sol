@@ -2,17 +2,17 @@ const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test
 const { ZERO_ADDRESS } = constants;
 const {expect} = require("chai");
 
-const CollateralToken = artifacts.require("CollateralToken");
+const KeeperNFT = artifacts.require("KeeperNFT");
 
 
-contract('CollateralToken', (accounts) => {
+contract('KeeperNFT', (accounts) => {
     const [owner, minter, user1, user2] = accounts;
 
     const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
     const MINTER_ROLE = web3.utils.soliditySha3('MINTER_ROLE');
 
     beforeEach(async () => {
-        this.token = await CollateralToken.new(minter)
+        this.token = await KeeperNFT.new(minter)
     });
 
     it('role', async() => {

@@ -25,8 +25,7 @@ contract('MockBTC', (accounts) => {
 
         describe('minting', () => {
             beforeEach('minting', async () => {
-                const { logs } = await this.wbtc.mint(recipient, amount);
-                this.logs = logs;
+                await this.wbtc.mint(recipient, amount);
             });
 
             it('amount', async () => {

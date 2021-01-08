@@ -6,21 +6,20 @@ import "@openzeppelin/contracts/token/ERC721/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 
-contract CollateralToken is AccessControl, ERC721Burnable {
+contract NFTBase is AccessControl, ERC721Burnable {
     // TODO: support pause?
     using Counters for Counters.Counter;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _id_gen;
 
-    constructor (address minter) public ERC721("Keeper Collateral Token", "KCT") {
+    constructor (string memory name, string memory symbol, address minter) public ERC721(name, symbol) {
         _setupRole(MINTER_ROLE, minter);
     }
 
     function mint(address keeper) external returns (uint256) {
         require(hasRole(MINTER_ROLE, _msgSender()), "require minter role");
 
-        // TODO: not sure if returning id is the normal way
         uint256 id = _id_gen.current();
         _mint(keeper, id);
         _id_gen.increment();

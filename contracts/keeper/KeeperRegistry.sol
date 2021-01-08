@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {AssetMeta} from "../core/AssetMeta.sol";
-import {CollateralToken} from "../keeper/CollateralToken.sol";
+import {KeeperNFT} from "../keeper/KeeperNFT.sol";
 import {CollateralLib} from "../keeper/CollateralLib.sol";
 import {IKeeperImport} from "../interface/IKeeperImport.sol";
 
 
-contract KeeperSystem is AccessControl, IKeeperImport {
+contract KeeperRegistry is AccessControl, IKeeperImport {
     using SafeMath for uint256;
     using CollateralLib for CollateralLib.CollateralMap;
 
@@ -19,6 +19,9 @@ contract KeeperSystem is AccessControl, IKeeperImport {
     event KeeperAdded(address indexed keeper, uint256 indexed tokenId, address[] btc, uint256[] amount);
 
     event KeeperDeleted(address indexed keeper, uint256 indexed tokenId);
+
+    event KeeperImported(address indexed from, address[] assets, uint256[] amounts,
+        address[] keepers, uint256[] keeper_amounts);
 
     event DependenciesSet(address indexed token, address indexed meta);
 
@@ -28,13 +31,18 @@ contract KeeperSystem is AccessControl, IKeeperImport {
 
 
     // var
-    CollateralToken collateral_token;
+    KeeperNFT collateral_token;
     AssetMeta collateral_meta;
     CollateralLib.CollateralMap keeper_collaterals;
 
     // view func
     function containId(uint256 _id) public view returns (bool) {
         return keeper_collaterals.containId(_id);
+    }
+
+    function getId(address keeper) public view returns (uint256) {
+        // TODO: only one id is allowed
+        return collateral_token.tokenOfOwnerByIndex(keeper, 0);
     }
 
     // write func
@@ -46,7 +54,7 @@ contract KeeperSystem is AccessControl, IKeeperImport {
         _setupRole(KEEPER_ADMIN_ROLE, keeper_admin);
     }
 
-    function setDependencies(CollateralToken _token, AssetMeta _meta) external {
+    function setDependencies(KeeperNFT _token, AssetMeta _meta) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         collateral_token = _token;
@@ -79,7 +87,7 @@ contract KeeperSystem is AccessControl, IKeeperImport {
     }
 
     function importKeepers(address _from, address[] calldata _assets, uint256[] calldata _amounts,
-        address[] calldata _keepers, uint256[] calldata _keeper_amounts) external override returns (bool success) {
+        address[] calldata _keepers, uint256[] calldata _keeper_amounts) external override {
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
         require(_assets.length == _amounts.length, "length not match");
 
@@ -111,7 +119,7 @@ contract KeeperSystem is AccessControl, IKeeperImport {
             _addKeeper(_keepers[i], _assets, _keeper_amounts[base : base + _asset_num]);
         }
 
-        return true;
+        emit KeeperImported(_from, _assets, _amounts, _keepers, _keeper_amounts);
     }
 
     function _addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) private {

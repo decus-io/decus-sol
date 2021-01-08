@@ -6,6 +6,10 @@ library BTCUtils {
 
     //    function getBTCDecimal() external pure returns (uint256) { return BTC_DECIMAL; }
 
+    function getSatoshiMultiplierForEBTC() internal pure returns (uint256) {
+        return 10 ** 10;
+    }
+
     function getSatoshiDivisor(uint256 decimal) internal pure returns (uint256) {
         require(decimal >= BTC_DECIMAL, "asset decimal not supported");
 

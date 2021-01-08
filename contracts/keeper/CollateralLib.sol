@@ -14,8 +14,8 @@ library CollateralLib {
 
     struct KeeperCollateral {
         uint256[] indexes;
-        bool exists;
         uint256 satoshi;
+        bool exists;
     }
 
     struct CollateralMap {

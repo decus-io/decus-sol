@@ -15,10 +15,10 @@ contract EBTC is ERC20Burnable, ERC20Pausable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    constructor(address admin) ERC20(_name, _symbol) public {
+    constructor(address admin, address minter) ERC20(_name, _symbol) public {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
 
-        _setupRole(MINTER_ROLE, admin);
+        _setupRole(MINTER_ROLE, minter);
         _setupRole(PAUSER_ROLE, admin);
     }
 

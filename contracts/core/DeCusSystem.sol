@@ -11,23 +11,35 @@ import {BTCUtils} from "../utils/BTCUtils.sol";
 
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
-import {ReceiptFactory} from "../user/ReceiptFactory.sol";
+import {ReceiptController} from "../user/ReceiptController.sol";
 
 
 contract DeCusSystem is AccessControl, Pausable {
     using SafeMath for uint256;
 
+    event MintRequest(uint256 indexed groupId, address indexed from, uint256 amountInSatoshi);
+    event MintReceived(uint256 indexed groupId);
+
     EBTC ebtc;
     GroupRegistry groups;
-    ReceiptFactory receiptFactory;
+    ReceiptController receiptController;
 
     constructor(address admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    function setDependencies(EBTC _ebtc, GroupRegistry _groups) external {
+    function setDependencies(EBTC _ebtc, GroupRegistry _groups, ReceiptController _receipts) external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
+
         ebtc = _ebtc;
         groups = _groups;
+        receiptController = _receipts;
+    }
+
+    function addGroup(uint256 _id, uint256[] calldata _keepers, string memory _btcAddress, uint256 _maxSatoshi) public {
+        // TODO: set group admin role
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require group admin role");
+        groups.addGroup(_id, _keepers, _btcAddress, _maxSatoshi);
     }
 
     function mintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {
@@ -37,11 +49,13 @@ contract DeCusSystem is AccessControl, Pausable {
         require(groups.getGroupAllowance(_groupId) == _amountInSatoshi, "receipt need to fill all allowance");
         require(groups.isGroupEmpty(_groupId), "current version only support empty group");
 
-        receiptFactory.addReceipt(_msgSender(), _groupId, _amountInSatoshi);
+        receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
+
+        emit MintRequest(_groupId, _msgSender(), _amountInSatoshi);
     }
 
-    function verifyMint(string memory _proofPlaceholder, uint256 _groupId) public {
-        _verifyDeposit(_proofPlaceholder, _groupId);
+    function verifyMint(uint256 _groupId, string memory _proofPlaceholder) public {
+        _verifyDeposit(_groupId, _proofPlaceholder);
 
         _approveDeposit(_groupId);
 
@@ -56,39 +70,41 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: Originated from users, before verifyMint to cancel the btc deposit
     }
 
-    function _verifyDeposit(string memory _proofPlaceholder, uint256 _groupId) internal {
+    function _verifyDeposit(uint256 _groupId, string memory _proofPlaceholder) internal {
         // TODO: BTC need to match full amount in group
     }
 
     function _approveDeposit(uint256 _groupId) internal {
-        receiptFactory.depositReceived(_groupId);
-        groups.depositReceived(_groupId, receiptFactory.getAmountInSatoshi(_groupId));
+        receiptController.depositReceived(_groupId);
+        groups.depositReceived(_groupId, receiptController.getAmountInSatoshi(_groupId));
     }
 
     function _mintToUser(uint256 _groupId) internal {
-        address user = receiptFactory.getUserAddress(_groupId);
-        uint256 amountInSatoshi = receiptFactory.getAmountInSatoshi(_groupId);
-        // TODO: deduct fee
+        address user = receiptController.getUserAddress(_groupId);
+        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_groupId);
+        // TODO: add fee deduction
         ebtc.mint(user, amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC()));
     }
 
     function burnRequest(uint256 _groupId) public {
-        uint256 amountInSatoshi = receiptFactory.getAmountInSatoshi(_groupId);
+        // TODO: add fee deduction
+        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_groupId);
         uint256 amount = amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC());
 
         ebtc.burnFrom(_msgSender(), amount);
 
-        groups.withdrawRequested(_groupId, receiptFactory.getAmountInSatoshi(_groupId));
-        receiptFactory.withdrawRequested(_groupId);
+        groups.withdrawRequested(_groupId, receiptController.getAmountInSatoshi(_groupId));
+
+        receiptController.withdrawRequest(_groupId);
     }
 
-    function verifyWithdraw(string memory _proofPlaceholder, uint256 _groupId) public {
-        _verifyWithdraw(_proofPlaceholder, _groupId);
+    function verifyBurn(uint256 _groupId, string memory _proofPlaceholder) public {
+        _verifyBurn(_groupId, _proofPlaceholder);
 
-        receiptFactory.withdrawCompleted(_groupId);
+        receiptController.withdrawCompleted(_groupId);
     }
 
-    function _verifyWithdraw(string memory _proofPlaceholder, uint256 _groupId) internal {
+    function _verifyBurn(uint256 _groupId, string memory _proofPlaceholder) internal {
         // TODO: verify
     }
 

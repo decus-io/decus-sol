@@ -11,11 +11,12 @@ const AssetMeta = artifacts.require("AssetMeta");
 const KeeperNFT = artifacts.require("KeeperNFT");
 const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
+const ReceiptController = artifacts.require("ReceiptController");
 const DeCusSystem = artifacts.require("DeCusSystem");
 
 
 contract('DeCusSystem', (accounts) => {
-    const [owner, group_owner, keeper1, keeper2, user1] = accounts;
+    const [owner, keeper1, keeper2, user1] = accounts;
 
     // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -41,14 +42,16 @@ contract('DeCusSystem', (accounts) => {
         this.other = await OtherCoin.new();
         this.asset_meta = await AssetMeta.new([this.hbtc.address, this.wbtc.address]);
 
-        this.decus_system = await DeCusSystem.new(owner);
-
         this.keeper_registry = await KeeperRegistry.new(owner, owner);
         this.keeper_nft = await KeeperNFT.new(this.keeper_registry.address, {from: owner});
         await this.keeper_registry.setDependencies(this.keeper_nft.address, this.asset_meta.address, {from: owner})
 
-        // TODO: group_owner later will be set as decus_system
-        this.group_registry = await GroupRegistry.new(owner, group_owner);
+        this.decus_system = await DeCusSystem.new(owner);
+        this.ebtc = await EBTC.new(owner, this.decus_system.address);
+
+        this.group_registry = await GroupRegistry.new(owner, this.decus_system.address);
+        this.receipts = await ReceiptController.new(this.decus_system.address);
+        this.decus_system.setDependencies(this.ebtc.address, this.group_registry.address, this.receipts.address, {from: owner});
 
 
         // prepare keeper
@@ -67,8 +70,7 @@ contract('DeCusSystem', (accounts) => {
         this.keeper2Id = await this.keeper_registry.getId(keeper2);
         this.group1Keepers = [this.keeper1Id, this.keeper2Id];
 
-        await this.group_registry.addGroup(group1Id, this.group1Keepers, group1BtcAddress, group1BtcSatoshiAmount,
-            {from: group_owner});
+        await this.decus_system.addGroup(group1Id, this.group1Keepers, group1BtcAddress, group1BtcSatoshiAmount, {from: owner})
     });
 
     it('role', async() => {
@@ -80,16 +82,37 @@ contract('DeCusSystem', (accounts) => {
 
         expect(await this.group_registry.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.be.true;
 
-        expect(await this.group_registry.hasRole(GROUP_ADMIN_ROLE, group_owner)).to.be.true;
+        expect(await this.group_registry.hasRole(GROUP_ADMIN_ROLE, this.decus_system.address)).to.be.true;
     })
 
-    describe('mint', () => {
-//        beforeEach(async () => {
-//            await this.decus_system.mintRequest(this.group1Id, this.group1BtcSatoshiAmount, {from: user1});
-//        });
+    describe('overall state transition', () => {
+        it('round', async() => {
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, {from: user1});
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
 
-//        it('role', async() => {
-//        })
+            // TODO: add correct proof
+            await this.decus_system.verifyMint(group1Id, "proofplaceholder", {from: user1});
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(2));
+
+            amount = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)))
+            await this.ebtc.approve(this.decus_system.address, amount, {from: user1});
+
+            await this.decus_system.burnRequest(group1Id, {from: user1});
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(3));
+
+            await this.decus_system.verifyBurn(group1Id, {from: user1});
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(0));
+        })
+    });
+
+    describe('mint', () => {
+        beforeEach(async () => {
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, {from: user1});
+        });
+
+        it('check', async() => {
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
+        })
     });
 
 });

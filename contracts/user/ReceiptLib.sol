@@ -30,9 +30,14 @@ library ReceiptLib {
         return _map.receipts[groupId].amountInSatoshi;
     }
 
-    function addReceipt(ReceiptMap storage _map, address _user, uint256 _groupId, uint256 _amountInSatoshi) internal {
+    function getReceiptStatus(ReceiptMap storage _map, uint256 groupId) internal view returns (uint256) {
+        return uint256(_map.receipts[groupId].status);
+    }
+
+    function depositRequest(ReceiptMap storage _map, address _user, uint256 _groupId, uint256 _amountInSatoshi) internal {
         Receipt storage receipt = _map.receipts[_groupId];
         require(receipt.status == Status.Available, "receipt is in use");
+        require(receipt.amountInSatoshi == 0, "receipt amount is not empty");
 
         receipt.user = _user;
         receipt.groupId = _groupId;
@@ -48,7 +53,7 @@ library ReceiptLib {
         receipt.status = Status.DepositReceived;
     }
 
-    function withdrawRequested(ReceiptMap storage _map, uint256 _groupId) internal {
+    function withdrawRequest(ReceiptMap storage _map, uint256 _groupId) internal {
         Receipt storage receipt = _map.receipts[_groupId];
 
         require(receipt.status == Status.DepositReceived, "receipt is not in DepositReceived state");
@@ -63,6 +68,7 @@ library ReceiptLib {
 
         receipt.status = Status.Available;
 
+        receipt.amountInSatoshi = 0;
     }
 
 }

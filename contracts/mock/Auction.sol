@@ -3,7 +3,7 @@
 pragma solidity ^0.6.12;
 
 import {IKeeperImport} from "../interface/IKeeperImport.sol";
-import {WBTC, HBTC} from "./external/BTCMock.sol";
+import {WBTC, HBTC} from "./external/MockBTC.sol";
 
 contract Auction {
     IKeeperImport keeper_contract;

@@ -18,11 +18,9 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+const kovan_infura_test = `https://kovan.infura.io/v3/${process.env.INFURA_TEST_ID}`;
+const mnemonic = process.env.MNEMONIC_TEST;
 
 module.exports = {
   /**
@@ -47,6 +45,12 @@ module.exports = {
       port: 8545,            // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
      },
+     kovan: {
+      provider: () => new HDWalletProvider(mnemonic, kovan_infura_test),
+      network_id: 42,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
     // Another network with more advanced options...
     // advanced: {
     // port: 8777,             // Custom port
@@ -76,7 +80,7 @@ module.exports = {
 
   // Set default mocha options here, use special reporters etc.
   mocha: {
-    // timeout: 100000
+     timeout: 2000000
   },
 
   // Configure your compilers

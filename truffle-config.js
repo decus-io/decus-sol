@@ -49,7 +49,6 @@ module.exports = {
       provider: () => new HDWalletProvider(mnemonic, kovan_infura_test),
       network_id: 42,
       timeoutBlocks: 200,
-      skipDryRun: true
     },
     // Another network with more advanced options...
     // advanced: {

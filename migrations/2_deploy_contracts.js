@@ -1,5 +1,3 @@
-const externalContracts = require('./external');
-
 const EBTC = artifacts.require('EBTC')
 const DeCus = artifacts.require('DeCus')
 const AssetLib = artifacts.require("AssetLib");
@@ -11,6 +9,9 @@ const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
 const DeCusSystem = artifacts.require("DeCusSystem");
+
+const externalContracts = require('./external');
+
 
 // ============ Main Migration ============
 

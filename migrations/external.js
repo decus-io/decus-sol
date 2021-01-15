@@ -6,7 +6,7 @@ module.exports = {
     WBTC: {
         mainnet: '0x',
         kovan: '0x13c39be3d5250bec24b29c3962379e0869893565',
-    }
+    },
     AUCTION: {
         mainnet: '0x',
         kovan: '0x044Bc5A48B8daBc2197eA33b5076572275E7aCCd',

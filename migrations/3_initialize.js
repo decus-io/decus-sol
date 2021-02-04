@@ -12,7 +12,7 @@ const externalContracts = require('./external');
 const migration = async (deployer, network, accounts) => {
     const keeper_registry = await KeeperRegistry.deployed();
     keeper_registry.setDependencies(KeeperNFT.address, AssetMeta.address);
-    console.log('KeeperRegistry set dependencies');
+    console.log('KeeperRegistry set dependencies: %s %s', KeeperNFT.address, AssetMeta.address);
 
     if (network !== 'development') {
         const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3('KEEPER_ADMIN_ROLE');
@@ -21,7 +21,7 @@ const migration = async (deployer, network, accounts) => {
 
     const decus_system = await DeCusSystem.deployed();
     decus_system.setDependencies(EBTC.address, GroupRegistry.address, ReceiptController.address);
-    console.log('DeCusSystem set dependencies');
+    console.log('DeCusSystem set dependencies: %s %s %s', EBTC.address, GroupRegistry.address, ReceiptController.address);
 }
 
 module.exports = migration

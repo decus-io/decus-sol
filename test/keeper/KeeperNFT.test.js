@@ -38,7 +38,7 @@ contract('KeeperNFT', (accounts) => {
         it('add btcPubkey revert', async () => {
             const receipt = await this.token.mint(user1);
             await expectRevert(this.token.setBtcPubkey(tokenId, btcPubkey, {from: user2}),
-                'require owner of tokenId');
+                'require admin or owner of tokenId');
         });
     });
 

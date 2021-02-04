@@ -62,11 +62,11 @@ contract('DeCusSystem', (accounts) => {
         await this.wbtc.mint(keeper2, wbtc_holding);
 
         await this.hbtc.approve(this.keeper_registry.address, keeper_hbtc_amount, {from: keeper1});
-        await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [keeper_hbtc_amount], {from: owner})
+        await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [keeper_hbtc_amount], {from: keeper1})
         this.keeper1Id = await this.keeper_registry.getId(keeper1);
 
         await this.wbtc.approve(this.keeper_registry.address, keeper_wbtc_amount, {from: keeper2});
-        await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [keeper_wbtc_amount], {from: owner});
+        await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [keeper_wbtc_amount], {from: keeper2});
         this.keeper2Id = await this.keeper_registry.getId(keeper2);
         this.group1Keepers = [this.keeper1Id, this.keeper2Id];
 

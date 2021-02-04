@@ -29,7 +29,8 @@ contract KeeperNFT is AccessControl, ERC721Burnable {
     }
 
     function setBtcPubkey(uint256 tokenId, string memory btcPubkey) external {
-        require(ownerOf(tokenId) == _msgSender(), "require owner of tokenId");
+        // TODO: use of admin here is because KeeperRegistry would call this function, now sure if we can avoid using admin role
+        require(hasRole(ADMIN_ROLE, _msgSender()) || (ownerOf(tokenId) == _msgSender()), "require admin or owner of tokenId");
         _setTokenURI(tokenId, btcPubkey);
     }
 }

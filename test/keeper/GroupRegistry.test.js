@@ -58,11 +58,11 @@ contract('GroupRegistry', (accounts) => {
 
         beforeEach(async () => {
             await this.hbtc.approve(this.keeper_registry.address, amount, {from: keeper1});
-            await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [amount], {from: decus_system});
+            await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [amount], {from: keeper1});
             const keeper1Id = await this.keeper_registry.getId(keeper1);
 
             await this.wbtc.approve(this.keeper_registry.address, amount, {from: keeper2});
-            await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [amount], {from: decus_system});
+            await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [amount], {from: keeper2});
             const keeper2Id = await this.keeper_registry.getId(keeper2);
             this.keepers = [keeper1Id, keeper2Id];
         });

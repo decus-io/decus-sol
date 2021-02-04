@@ -9,50 +9,62 @@ contract('KeeperNFT', (accounts) => {
     const [owner, minter, user1, user2] = accounts;
 
     const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    const MINTER_ROLE = web3.utils.soliditySha3('MINTER_ROLE');
+    const ADMIN_ROLE = web3.utils.soliditySha3('ADMIN_ROLE');
 
     beforeEach(async () => {
         this.token = await KeeperNFT.new(minter)
     });
 
     it('role', async() => {
-        expect(await this.token.getRoleMember(MINTER_ROLE, 0)).to.equal(minter);
+        expect(await this.token.getRoleMember(ADMIN_ROLE, 0)).to.equal(minter);
 
-        expect(await this.token.getRoleAdmin(MINTER_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
+        expect(await this.token.getRoleAdmin(ADMIN_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
     })
 
-    describe('mint', () => {
-        it('minter can mint', async () => {
-            const tokenId = new BN('0');
-            const receipt = await this.token.mint(user1, {from: minter});
+    describe('add', () => {
+        const btcPubkey = 'pubkeypubkeypubkey';
+        const tokenId = new BN('0');
+
+        it('add keeper', async () => {
+            const receipt = await this.token.mint(user1);
+            await this.token.setBtcPubkey(tokenId, btcPubkey, {from: user1});
             expectEvent(receipt, 'Transfer', { from: ZERO_ADDRESS, to: user1, tokenId: tokenId });
 
             expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('1');
             expect(await this.token.ownerOf(tokenId)).to.equal(user1);
+            expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey);
         });
-        it('other cannot mint', async () => {
-            await expectRevert(this.token.mint(user1, { from: user1 }),
-            'require minter role',);
-            await expectRevert(this.token.mint(user1, { from: user2 }),
-            'require minter role',);
+
+        it('add btcPubkey revert', async () => {
+            const receipt = await this.token.mint(user1);
+            await expectRevert(this.token.setBtcPubkey(tokenId, btcPubkey, {from: user2}),
+                'require admin or owner of tokenId');
         });
     });
 
     describe('nft transfer', () => {
+        const btcPubkey = 'pubkeypubkeypubkey';
+        const btcPubkey2 = 'pubkeypubkeypubkey2';
+        const tokenId = new BN('0');
+
         beforeEach(async () => {
-            await this.token.mint(user1, {from: minter});
+            await this.token.mint(user1);
+            await this.token.setBtcPubkey(tokenId, btcPubkey, {from: user1});
         });
 
         it('tokenid', async () => {
-            const tokenId = new BN('0');
             expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('1');
             expect(await this.token.ownerOf(tokenId)).to.equal(user1);
+            expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey);
 
             await this.token.approve(user2, tokenId, {from: user1});
             await this.token.transferFrom(user1, user2, tokenId, {from: user1});
 
             expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('0');
             expect(await this.token.ownerOf(tokenId)).to.equal(user2);
+
+            await this.token.setBtcPubkey(tokenId, btcPubkey2, {from: user2});
+            expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey2);
         });
     });
 

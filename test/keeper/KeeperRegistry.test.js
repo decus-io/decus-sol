@@ -16,7 +16,7 @@ contract('KeeperRegistry', (accounts) => {
 
     // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    const MINTER_ROLE = web3.utils.soliditySha3('MINTER_ROLE');
+    const ADMIN_ROLE = web3.utils.soliditySha3('ADMIN_ROLE');
     const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3('KEEPER_ADMIN_ROLE');
 
     const hbtc_holding = new BN(1000);
@@ -37,9 +37,9 @@ contract('KeeperRegistry', (accounts) => {
     });
 
     it('role', async() => {
-        expect(await this.keeper_nft.getRoleAdmin(MINTER_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
+        expect(await this.keeper_nft.getRoleAdmin(ADMIN_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
 
-        expect(await this.keeper_nft.getRoleMember(MINTER_ROLE, 0)).to.equal(this.keeper_registry.address);
+        expect(await this.keeper_nft.getRoleMember(ADMIN_ROLE, 0)).to.equal(this.keeper_registry.address);
 
         expect(await this.keeper_registry.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.be.true;
 
@@ -65,7 +65,7 @@ contract('KeeperRegistry', (accounts) => {
         });
 
         it('add', async() => {
-            const receipt = await this.keeper_registry.addKeeper(user1, [this.hbtc.address], [amount], {from: keeper_admin});
+            const receipt = await this.keeper_registry.addKeeper(user1, [this.hbtc.address], [amount], {from: user1});
             expectEvent(receipt, 'KeeperAdded', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address]});
             // TODO: not sure why amount couldn't pass test, shown as below
             // expected event argument 'amount' to have value 50000 but got 50000
@@ -90,7 +90,7 @@ contract('KeeperRegistry', (accounts) => {
 
         describe('remove', () => {
             beforeEach(async () => {
-                await this.keeper_registry.addKeeper(user1, [this.hbtc.address], [amount], {from: keeper_admin});
+                await this.keeper_registry.addKeeper(user1, [this.hbtc.address], [amount], {from: user1});
             });
 
             it('remove success', async() => {

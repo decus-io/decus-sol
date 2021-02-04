@@ -63,15 +63,16 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         emit DependenciesSet(address(collateral_token), address(collateral_meta));
     }
 
-    function addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) external {
-        require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
-
+    function addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts,
+        string memory _btcPubkey) external {
         // transfer assets
         for (uint i = 0; i < _assets.length; i++) {
             require(IERC20(_assets[i]).transferFrom(_keeper, address(this), _amounts[i]), "transfer failed");
         }
 
-        _addKeeper(_keeper, _assets, _amounts);
+        uint256 id = _addKeeper(_keeper, _assets, _amounts);
+
+        collateral_token.setBtcPubkey(id, _btcPubkey);
     }
 
     function deleteKeeper(uint256 _id) external {
@@ -122,7 +123,7 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         emit KeeperImported(_from, _assets, _amounts, _keepers, _keeper_amounts);
     }
 
-    function _addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) private {
+    function _addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) private returns (uint256) {
         // only allow one nft per keeper
         require(collateral_token.balanceOf(_keeper) == 0, "keeper existed");
 
@@ -131,6 +132,8 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         keeper_collaterals.addKeeper(_id, _assets, _amounts, collateral_meta);
 
         emit KeeperAdded(_keeper, _id, _assets, _amounts);
+
+        return _id;
     }
 
 }

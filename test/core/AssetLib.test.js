@@ -1,6 +1,5 @@
-const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
-const { ZERO_ADDRESS } = constants;
-const {expect} = require("chai");
+const { BN } = require("@openzeppelin/test-helpers");
+const { expect } = require("chai");
 
 const WBTC = artifacts.require("WBTC");
 const HBTC = artifacts.require("HBTC");
@@ -8,9 +7,8 @@ const OtherCoin = artifacts.require("OtherCoin");
 const AssetMeta = artifacts.require("AssetMeta");
 const AssetLibMock = artifacts.require("AssetLibMock");
 
-
-contract('AssetLib', (accounts) => {
-    const [owner] = accounts;
+contract("AssetLib", (accounts) => {
+    // const [owner] = accounts;
 
     beforeEach(async () => {
         this.wbtc = await WBTC.new();
@@ -24,23 +22,27 @@ contract('AssetLib', (accounts) => {
         this.wbtc_multiplier = new BN(10).pow(await this.wbtc.decimals());
     });
 
-    describe('getSatoshiValue', () => {
-        it('hbtc', async() => {
-            const btc_amount = new BN(10);
-            const satoshi_amount = btc_amount.mul(this.satoshi_multiplier);
-            const amount = btc_amount.mul(this.hbtc_multiplier);
+    describe("getSatoshiValue", () => {
+        it("hbtc", async () => {
+            const btcAmount = new BN(10);
+            const satoshiAmount = btcAmount.mul(this.satoshi_multiplier);
+            const amount = btcAmount.mul(this.hbtc_multiplier);
 
             await this.lib.setAsset(this.hbtc.address, amount);
-            expect(await this.lib.getSatoshiValue(this.meta.address)).to.be.bignumber.equal(satoshi_amount);
-        })
-        it('wbtc', async() => {
-            const btc_amount = new BN(10);
-            const satoshi_amount = btc_amount.mul(this.satoshi_multiplier);
-            const amount = btc_amount.mul(this.wbtc_multiplier);
+            expect(await this.lib.getSatoshiValue(this.meta.address)).to.be.bignumber.equal(
+                satoshiAmount
+            );
+        });
+        it("wbtc", async () => {
+            const btcAmount = new BN(10);
+            const satoshiAmount = btcAmount.mul(this.satoshi_multiplier);
+            const amount = btcAmount.mul(this.wbtc_multiplier);
 
             await this.lib.setAsset(this.wbtc.address, amount);
-            expect(await this.lib.getSatoshiValue(this.meta.address)).to.be.bignumber.equal(satoshi_amount);
-        })
+            expect(await this.lib.getSatoshiValue(this.meta.address)).to.be.bignumber.equal(
+                satoshiAmount
+            );
+        });
         // TODO: other coin
     });
 });

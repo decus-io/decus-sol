@@ -1,26 +1,36 @@
 {
-  "name": "decus-sol",
-  "version": "0.0.1",
-  "description": "decus solidity contract\r ==============",
-  "main": "truffle-config.js",
-  "directories": {
-    "test": "test"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^3.2.0"
-  },
-  "devDependencies": {
-    "@openzeppelin/test-environment": "^0.1.7",
-    "@openzeppelin/test-helpers": "^0.5.9",
-    "@truffle/hdwallet-provider": "^1.2.1",
-    "chai": "^4.2.0",
-    "ethers": "^5.0.26",
-    "truffle-plugin-verify": "^0.5.4"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "decus",
-  "license": "MIT"
+    "name": "decus-sol",
+    "version": "0.0.1",
+    "description": "decus solidity contract\r ==============",
+    "main": "truffle-config.js",
+    "directories": {
+        "test": "test"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^3.2.0"
+    },
+    "devDependencies": {
+        "@openzeppelin/test-environment": "^0.1.7",
+        "@openzeppelin/test-helpers": "^0.5.9",
+        "@truffle/hdwallet-provider": "^1.2.1",
+        "chai": "^4.2.0",
+        "eslint": "^7.18.0",
+        "eslint-config-prettier": "^7.2.0",
+        "eslint-config-standard": "^16.0.2",
+        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-node": "^11.1.0",
+        "eslint-plugin-promise": "^4.2.1",
+        "ethers": "^5.0.26",
+        "prettier": "^2.2.1",
+        "prettier-plugin-solidity": "^1.0.0-beta.3",
+        "truffle-plugin-verify": "^0.5.4"
+    },
+    "scripts": {
+        "check": "npm run lint && prettier --ignore-path .gitignore -c .",
+        "fmt": "prettier --ignore-path .gitignore -w .",
+        "lint": "eslint --ext .js --ignore-path .gitignore ."
+    },
+    "keywords": [],
+    "author": "decus",
+    "license": "MIT"
 }

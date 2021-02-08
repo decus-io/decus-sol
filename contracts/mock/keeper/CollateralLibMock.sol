@@ -6,7 +6,6 @@ import {IAssetMeta} from "../../interface/IAssetMeta.sol";
 import {CollateralLib} from "../../keeper/CollateralLib.sol";
 import {AssetLib} from "../../core/AssetLib.sol";
 
-
 contract CollateralLibMock {
     CollateralLib.CollateralMap _map;
     AssetLib.Asset _asset;
@@ -15,8 +14,12 @@ contract CollateralLibMock {
         return CollateralLib.containId(_map, _id);
     }
 
-    function addKeeper(uint256 _id, address[] calldata _assets, uint256[] calldata _amounts,
-        IAssetMeta _meta) public {
+    function addKeeper(
+        uint256 _id,
+        address[] calldata _assets,
+        uint256[] calldata _amounts,
+        IAssetMeta _meta
+    ) public {
         CollateralLib.addKeeper(_map, _id, _assets, _amounts, _meta);
     }
 

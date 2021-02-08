@@ -1,6 +1,5 @@
-const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
-const { ZERO_ADDRESS } = constants;
-const {expect} = require("chai");
+const { BN } = require("@openzeppelin/test-helpers");
+const { expect } = require("chai");
 
 const WBTC = artifacts.require("WBTC");
 const HBTC = artifacts.require("HBTC");
@@ -14,25 +13,25 @@ const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
 const DeCusSystem = artifacts.require("DeCusSystem");
 
-
-contract('DeCusSystem', (accounts) => {
+/* eslint-disable no-unused-expressions */
+contract("DeCusSystem", (accounts) => {
     const [owner, keeper1, keeper2, user1] = accounts;
 
     // TODO: can we use value from *.sol?
-    const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    const MINTER_ROLE = web3.utils.soliditySha3('MINTER_ROLE');
-    const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3('KEEPER_ADMIN_ROLE');
-    const GROUP_ADMIN_ROLE = web3.utils.soliditySha3('GROUP_ADMIN_ROLE');
+    const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    // const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
+    const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
+    const GROUP_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
 
-    const hbtc_multiplier = new BN(10).pow(new BN(10));
-    const wbtc_holding = new BN(1000);
-    const hbtc_holding = (new BN(1000)).mul(hbtc_multiplier);
+    const hbtcMultiplier = new BN(10).pow(new BN(10));
+    const wbtcHolding = new BN(1000);
+    const hbtcHolding = new BN(1000).mul(hbtcMultiplier);
 
-    const keeper_wbtc_amount = new BN(600);
-    const keeper_hbtc_amount = keeper_wbtc_amount.mul(hbtc_multiplier);
+    const keeperWbtcAmount = new BN(600);
+    const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
 
     const group1Id = new BN(111);
-    const group1BtcAddress = '38aNsdfsdfsdfsdfsdfdsfsdf';
+    const group1BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
     const group1BtcSatoshiAmount = new BN(200000);
 
     beforeEach(async () => {
@@ -43,37 +42,59 @@ contract('DeCusSystem', (accounts) => {
         this.asset_meta = await AssetMeta.new([this.hbtc.address, this.wbtc.address]);
 
         this.keeper_registry = await KeeperRegistry.new(owner, owner);
-        this.keeper_nft = await KeeperNFT.new(this.keeper_registry.address, {from: owner});
-        await this.keeper_registry.setDependencies(this.keeper_nft.address, this.asset_meta.address, {from: owner})
+        this.keeper_nft = await KeeperNFT.new(this.keeper_registry.address, { from: owner });
+        await this.keeper_registry.setDependencies(
+            this.keeper_nft.address,
+            this.asset_meta.address,
+            { from: owner }
+        );
 
         this.decus_system = await DeCusSystem.new(owner);
         this.ebtc = await EBTC.new(owner, this.decus_system.address);
 
         this.group_registry = await GroupRegistry.new(owner, this.decus_system.address);
         this.receipts = await ReceiptController.new(this.decus_system.address);
-        this.decus_system.setDependencies(this.ebtc.address, this.group_registry.address, this.receipts.address, {from: owner});
-
+        this.decus_system.setDependencies(
+            this.ebtc.address,
+            this.group_registry.address,
+            this.receipts.address,
+            { from: owner }
+        );
 
         // prepare keeper
-        await this.hbtc.mint(keeper1, hbtc_holding);
-        await this.wbtc.mint(keeper1, wbtc_holding);
+        await this.hbtc.mint(keeper1, hbtcHolding);
+        await this.wbtc.mint(keeper1, wbtcHolding);
 
-        await this.hbtc.mint(keeper2, hbtc_holding);
-        await this.wbtc.mint(keeper2, wbtc_holding);
+        await this.hbtc.mint(keeper2, hbtcHolding);
+        await this.wbtc.mint(keeper2, wbtcHolding);
 
-        await this.hbtc.approve(this.keeper_registry.address, keeper_hbtc_amount, {from: keeper1});
-        await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [keeper_hbtc_amount], {from: keeper1})
+        await this.hbtc.approve(this.keeper_registry.address, keeperHbtcAmount, {
+            from: keeper1,
+        });
+        await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [keeperHbtcAmount], {
+            from: keeper1,
+        });
         this.keeper1Id = await this.keeper_registry.getId(keeper1);
 
-        await this.wbtc.approve(this.keeper_registry.address, keeper_wbtc_amount, {from: keeper2});
-        await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [keeper_wbtc_amount], {from: keeper2});
+        await this.wbtc.approve(this.keeper_registry.address, keeperWbtcAmount, {
+            from: keeper2,
+        });
+        await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [keeperWbtcAmount], {
+            from: keeper2,
+        });
         this.keeper2Id = await this.keeper_registry.getId(keeper2);
         this.group1Keepers = [this.keeper1Id, this.keeper2Id];
 
-        await this.decus_system.addGroup(group1Id, this.group1Keepers, group1BtcAddress, group1BtcSatoshiAmount, {from: owner})
+        await this.decus_system.addGroup(
+            group1Id,
+            this.group1Keepers,
+            group1BtcAddress,
+            group1BtcSatoshiAmount,
+            { from: owner }
+        );
     });
 
-    it('role', async() => {
+    it("role", async () => {
         expect(await this.decus_system.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.be.true;
 
         expect(await this.keeper_registry.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.be.true;
@@ -82,37 +103,37 @@ contract('DeCusSystem', (accounts) => {
 
         expect(await this.group_registry.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.be.true;
 
-        expect(await this.group_registry.hasRole(GROUP_ADMIN_ROLE, this.decus_system.address)).to.be.true;
-    })
+        expect(await this.group_registry.hasRole(GROUP_ADMIN_ROLE, this.decus_system.address)).to.be
+            .true;
+    });
 
-    describe('overall state transition', () => {
-        it('round', async() => {
-            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, {from: user1});
+    describe("overall state transition", () => {
+        it("round", async () => {
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
 
             // TODO: add correct proof
-            await this.decus_system.verifyMint(group1Id, "proofplaceholder", {from: user1});
+            await this.decus_system.verifyMint(group1Id, "proofplaceholder", { from: user1 });
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(2));
 
-            amount = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)))
-            await this.ebtc.approve(this.decus_system.address, amount, {from: user1});
+            const amount = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)));
+            await this.ebtc.approve(this.decus_system.address, amount, { from: user1 });
 
-            await this.decus_system.burnRequest(group1Id, {from: user1});
+            await this.decus_system.burnRequest(group1Id, { from: user1 });
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(3));
 
-            await this.decus_system.verifyBurn(group1Id, {from: user1});
+            await this.decus_system.verifyBurn(group1Id, { from: user1 });
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(0));
-        })
+        });
     });
 
-    describe('mint', () => {
+    describe("mint", () => {
         beforeEach(async () => {
-            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, {from: user1});
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
         });
 
-        it('check', async() => {
+        it("check", async () => {
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
-        })
+        });
     });
-
 });

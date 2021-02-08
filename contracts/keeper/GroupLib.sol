@@ -3,7 +3,6 @@ pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-
 library GroupLib {
     using SafeMath for uint256;
 
@@ -15,7 +14,7 @@ library GroupLib {
         uint256[] keepers;
     }
 
-    function allowance(Group storage _group) internal view returns (uint256){
+    function allowance(Group storage _group) internal view returns (uint256) {
         return _group.maxSatoshi.sub(_group.currSatoshi);
     }
 
@@ -32,22 +31,30 @@ library GroupLib {
         return _map.id2index[_id] != 0;
     }
 
-    function isGroupEmpty(GroupMap storage _map, uint256 _id) internal view returns (bool){
+    function isGroupEmpty(GroupMap storage _map, uint256 _id) internal view returns (bool) {
         return _map.groups[_map.id2index[_id] - 1].currSatoshi == 0;
     }
 
-    function getGroupAllowance(GroupMap storage _map, uint256 _id) internal view returns (uint256){
+    function getGroupAllowance(GroupMap storage _map, uint256 _id) internal view returns (uint256) {
         return _map.groups[_map.id2index[_id] - 1].allowance();
     }
 
-    function addGroupSatoshi(GroupMap storage _map, uint256 _id, uint256 amountSatoshi) internal {
+    function addGroupSatoshi(
+        GroupMap storage _map,
+        uint256 _id,
+        uint256 amountSatoshi
+    ) internal {
         Group storage g = _map.groups[_map.id2index[_id] - 1];
         uint256 _currSatoshi = g.currSatoshi.add(amountSatoshi);
         require(_currSatoshi <= g.maxSatoshi, "amount exceed max allowance");
         g.currSatoshi = _currSatoshi;
     }
 
-    function removeGroupSatoshi(GroupMap storage _map, uint256 _id, uint256 amountSatoshi) internal {
+    function removeGroupSatoshi(
+        GroupMap storage _map,
+        uint256 _id,
+        uint256 amountSatoshi
+    ) internal {
         Group storage g = _map.groups[_map.id2index[_id] - 1];
         g.currSatoshi = g.currSatoshi.sub(amountSatoshi);
         // SafeMath ensures no overflow
@@ -65,14 +72,27 @@ library GroupLib {
         g.currSatoshi = 0;
     }
 
-    function addGroup(GroupMap storage _map, uint256 _id, uint256[] calldata _keepers, string memory _btcAddress,
-        uint256 _maxSatoshi) internal {
+    function addGroup(
+        GroupMap storage _map,
+        uint256 _id,
+        uint256[] calldata _keepers,
+        string memory _btcAddress,
+        uint256 _maxSatoshi
+    ) internal {
         // similar to openzeppelin EnumerableMap implementation
         uint256 keyIndex = _map.id2index[_id];
         require(keyIndex == 0, "group id already exist");
         // TODO: check btc address duplication
 
-        _map.groups.push(Group({maxSatoshi : _maxSatoshi, currSatoshi : 0, id : _id, btcAddress : _btcAddress, keepers : _keepers}));
+        _map.groups.push(
+            Group({
+                maxSatoshi: _maxSatoshi,
+                currSatoshi: 0,
+                id: _id,
+                btcAddress: _btcAddress,
+                keepers: _keepers
+            })
+        );
 
         _map.id2index[_id] = _map.groups.length;
     }
@@ -94,7 +114,11 @@ library GroupLib {
         delete _map.id2index[_id];
     }
 
-    function setMaxSatoshi(GroupMap storage _map, uint256 _index, uint256 _maxSatoshi) internal {
+    function setMaxSatoshi(
+        GroupMap storage _map,
+        uint256 _index,
+        uint256 _maxSatoshi
+    ) internal {
         Group storage g = _map.groups[_index];
         // TODO: require _maxSatoshi > _map.groups[i].currSatoshi?
         require(g.currSatoshi == 0, "require empty holding");
@@ -103,7 +127,7 @@ library GroupLib {
     }
 
     function setMaxSatoshiAll(GroupMap storage _map, uint256 _maxSatoshi) internal {
-        for (uint i = 0; i < _map.groups.length; i++) {
+        for (uint256 i = 0; i < _map.groups.length; i++) {
             _map.setMaxSatoshi(i, _maxSatoshi);
         }
     }

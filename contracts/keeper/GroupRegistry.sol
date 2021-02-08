@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import {GroupLib} from "./GroupLib.sol";
 
-
 contract GroupRegistry is AccessControl {
     using GroupLib for GroupLib.GroupMap;
 
@@ -40,7 +39,12 @@ contract GroupRegistry is AccessControl {
         return groups.getGroupAllowance(_id);
     }
 
-    function addGroup(uint256 _id, uint256[] calldata _keepers, string memory _btcAddress, uint256 _maxSatoshi) external {
+    function addGroup(
+        uint256 _id,
+        uint256[] calldata _keepers,
+        string memory _btcAddress,
+        uint256 _maxSatoshi
+    ) external {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
         // TODO: generate btc Address inside the contract?
         // TODO: verify btc address is controlled by the _keepers

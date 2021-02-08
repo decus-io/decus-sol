@@ -6,7 +6,6 @@ import {IAssetMeta} from "../../interface/IAssetMeta.sol";
 import {GroupLib} from "../../keeper/GroupLib.sol";
 import {AssetLib} from "../../core/AssetLib.sol";
 
-
 contract GroupLibMock {
     GroupLib.GroupMap _map;
 
@@ -38,8 +37,12 @@ contract GroupLibMock {
         GroupLib.emptyGroupSatoshi(_map, _id);
     }
 
-    function addGroup(uint256 _id, uint256[] calldata _keepers, string memory _btcAddress,
-        uint256 _maxSatoshi) public {
+    function addGroup(
+        uint256 _id,
+        uint256[] calldata _keepers,
+        string memory _btcAddress,
+        uint256 _maxSatoshi
+    ) public {
         return GroupLib.addGroup(_map, _id, _keepers, _btcAddress, _maxSatoshi);
     }
 

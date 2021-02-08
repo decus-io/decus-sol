@@ -1,34 +1,47 @@
 name: Deploy
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v2
+        steps:
+            - uses: actions/checkout@v2
 
-      - name: Setup node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: "12"
+            - name: Setup node.js
+              uses: actions/setup-node@v1
+              with:
+                  node-version: "12"
 
-      - name: Install dependencies
-        run: |
-          npm install -g truffle
-          npm install -g ganache-cli
-          npm install
+            - name: Install dependencies
+              run: |
+                  npm install -g truffle
+                  npm install -g ganache-cli
+                  npm install
 
-      - name: Run ganache
-        run: ganache-cli -a 200 &
+            - name: Run ganache
+              run: ganache-cli -a 200 &
 
-      - name: Run tests
-        run: truffle test
+            - name: Run tests
+              run: truffle test
+    check:
+        name: Lint and Format Check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Setup Node.js environment
+              uses: actions/setup-node@v2.1.4
+              with:
+                  node-version: 12.x
+            - name: Install dependencies
+              run: npm ci
+            - name: Check lint and format
+              run: npm run check

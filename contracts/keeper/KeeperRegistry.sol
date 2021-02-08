@@ -10,25 +10,32 @@ import {KeeperNFT} from "../keeper/KeeperNFT.sol";
 import {CollateralLib} from "../keeper/CollateralLib.sol";
 import {IKeeperImport} from "../interface/IKeeperImport.sol";
 
-
 contract KeeperRegistry is AccessControl, IKeeperImport {
     using SafeMath for uint256;
     using CollateralLib for CollateralLib.CollateralMap;
 
     // events
-    event KeeperAdded(address indexed keeper, uint256 indexed tokenId, address[] btc, uint256[] amount);
+    event KeeperAdded(
+        address indexed keeper,
+        uint256 indexed tokenId,
+        address[] btc,
+        uint256[] amount
+    );
 
     event KeeperDeleted(address indexed keeper, uint256 indexed tokenId);
 
-    event KeeperImported(address indexed from, address[] assets, uint256[] amounts,
-        address[] keepers, uint256[] keeper_amounts);
+    event KeeperImported(
+        address indexed from,
+        address[] assets,
+        uint256[] amounts,
+        address[] keepers,
+        uint256[] keeper_amounts
+    );
 
     event DependenciesSet(address indexed token, address indexed meta);
 
-
     // const
     bytes32 public constant KEEPER_ADMIN_ROLE = keccak256("KEEPER_ADMIN_ROLE");
-
 
     // var
     KeeperNFT collateral_token;
@@ -63,11 +70,18 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         emit DependenciesSet(address(collateral_token), address(collateral_meta));
     }
 
-    function addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts,
-        string memory _btcPubkey) external {
+    function addKeeper(
+        address _keeper,
+        address[] calldata _assets,
+        uint256[] calldata _amounts,
+        string memory _btcPubkey
+    ) external {
         // transfer assets
-        for (uint i = 0; i < _assets.length; i++) {
-            require(IERC20(_assets[i]).transferFrom(_keeper, address(this), _amounts[i]), "transfer failed");
+        for (uint256 i = 0; i < _assets.length; i++) {
+            require(
+                IERC20(_assets[i]).transferFrom(_keeper, address(this), _amounts[i]),
+                "transfer failed"
+            );
         }
 
         uint256 id = _addKeeper(_keeper, _assets, _amounts);
@@ -87,43 +101,58 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         emit KeeperDeleted(_keeper, _id);
     }
 
-    function importKeepers(address _from, address[] calldata _assets, uint256[] calldata _amounts,
-        address[] calldata _keepers, uint256[] calldata _keeper_amounts) external override {
+    function importKeepers(
+        address _from,
+        address[] calldata _assets,
+        uint256[] calldata _amounts,
+        address[] calldata _keepers,
+        uint256[] calldata _keeper_amounts
+    ) external override {
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
         require(_assets.length == _amounts.length, "length not match");
 
         uint256 _keeper_num = _keepers.length;
         uint256 _asset_num = _assets.length;
 
-        require(_keeper_amounts.length == _asset_num.mul(_keeper_num), "amounts length does not match");
+        require(
+            _keeper_amounts.length == _asset_num.mul(_keeper_num),
+            "amounts length does not match"
+        );
 
         // check amounts match
         uint256[] memory _sum_amounts = new uint256[](_asset_num);
-        for (uint i = 0; i < _keeper_num; i++) {
+        for (uint256 i = 0; i < _keeper_num; i++) {
             uint256 base = i.mul(_asset_num);
-            for (uint j = 0; j < _asset_num; j++) {
+            for (uint256 j = 0; j < _asset_num; j++) {
                 _sum_amounts[j] = _sum_amounts[j].add(_keeper_amounts[base + j]);
             }
         }
-        for (uint i = 0; i < _asset_num; i++) {
+        for (uint256 i = 0; i < _asset_num; i++) {
             require(_amounts[i] == _sum_amounts[i], "amounts do not match");
         }
 
         // transfer
         for (uint8 i = 0; i < _asset_num; i++) {
-            require(IERC20(_assets[i]).transferFrom(_from, address(this), _amounts[i]), "transfer failed");
+            require(
+                IERC20(_assets[i]).transferFrom(_from, address(this), _amounts[i]),
+                "transfer failed"
+            );
         }
 
         // add keeper
-        for (uint i = 0; i < _keeper_num; i++) {
+        for (uint256 i = 0; i < _keeper_num; i++) {
             uint256 base = i.mul(_asset_num);
-            _addKeeper(_keepers[i], _assets, _keeper_amounts[base : base + _asset_num]);
+            _addKeeper(_keepers[i], _assets, _keeper_amounts[base:base + _asset_num]);
         }
 
         emit KeeperImported(_from, _assets, _amounts, _keepers, _keeper_amounts);
     }
 
-    function _addKeeper(address _keeper, address[] calldata _assets, uint256[] calldata _amounts) private returns (uint256) {
+    function _addKeeper(
+        address _keeper,
+        address[] calldata _assets,
+        uint256[] calldata _amounts
+    ) private returns (uint256) {
         // only allow one nft per keeper
         require(collateral_token.balanceOf(_keeper) == 0, "keeper existed");
 
@@ -135,5 +164,4 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
 
         return _id;
     }
-
 }

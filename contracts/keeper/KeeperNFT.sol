@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-
 contract KeeperNFT is AccessControl, ERC721Burnable {
     // TODO: support pause?
     using Counters for Counters.Counter;
@@ -17,7 +16,7 @@ contract KeeperNFT is AccessControl, ERC721Burnable {
 
     // TODO: add blocklist
 
-    constructor (address admin) public ERC721("Keeper Collateral Token", "KCT") {
+    constructor(address admin) public ERC721("Keeper Collateral Token", "KCT") {
         _setupRole(ADMIN_ROLE, admin);
     }
 
@@ -30,7 +29,10 @@ contract KeeperNFT is AccessControl, ERC721Burnable {
 
     function setBtcPubkey(uint256 tokenId, string memory btcPubkey) external {
         // TODO: use of admin here is because KeeperRegistry would call this function, now sure if we can avoid using admin role
-        require(hasRole(ADMIN_ROLE, _msgSender()) || (ownerOf(tokenId) == _msgSender()), "require admin or owner of tokenId");
+        require(
+            hasRole(ADMIN_ROLE, _msgSender()) || (ownerOf(tokenId) == _msgSender()),
+            "require admin or owner of tokenId"
+        );
         _setTokenURI(tokenId, btcPubkey);
     }
 }

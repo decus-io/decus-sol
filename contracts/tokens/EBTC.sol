@@ -8,14 +8,13 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract EBTC is ERC20Burnable, ERC20Pausable, AccessControl {
-
     string private constant _name = "Exchangeable BTC";
     string private constant _symbol = "EBTC";
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    constructor(address admin, address minter) ERC20(_name, _symbol) public {
+    constructor(address admin, address minter) public ERC20(_name, _symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
 
         _setupRole(MINTER_ROLE, minter);
@@ -37,7 +36,11 @@ contract EBTC is ERC20Burnable, ERC20Pausable, AccessControl {
         _unpause();
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20, ERC20Pausable) {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override(ERC20, ERC20Pausable) {
         super._beforeTokenTransfer(from, to, amount);
     }
 }

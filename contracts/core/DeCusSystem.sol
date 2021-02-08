@@ -13,7 +13,6 @@ import {BTCUtils} from "../utils/BTCUtils.sol";
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
 import {ReceiptController} from "../user/ReceiptController.sol";
 
-
 contract DeCusSystem is AccessControl, Pausable {
     using SafeMath for uint256;
 
@@ -28,7 +27,11 @@ contract DeCusSystem is AccessControl, Pausable {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    function setDependencies(EBTC _ebtc, GroupRegistry _groups, ReceiptController _receipts) external {
+    function setDependencies(
+        EBTC _ebtc,
+        GroupRegistry _groups,
+        ReceiptController _receipts
+    ) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
@@ -36,7 +39,12 @@ contract DeCusSystem is AccessControl, Pausable {
         receiptController = _receipts;
     }
 
-    function addGroup(uint256 _id, uint256[] calldata _keepers, string memory _btcAddress, uint256 _maxSatoshi) public {
+    function addGroup(
+        uint256 _id,
+        uint256[] calldata _keepers,
+        string memory _btcAddress,
+        uint256 _maxSatoshi
+    ) public {
         // TODO: set group admin role
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require group admin role");
         groups.addGroup(_id, _keepers, _btcAddress, _maxSatoshi);
@@ -46,7 +54,10 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: system find btc group to return
         // 1. check group has enough space
         // 2. generate receipt, including user address
-        require(groups.getGroupAllowance(_groupId) == _amountInSatoshi, "receipt need to fill all allowance");
+        require(
+            groups.getGroupAllowance(_groupId) == _amountInSatoshi,
+            "receipt need to fill all allowance"
+        );
         require(groups.isGroupEmpty(_groupId), "current version only support empty group");
 
         receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
@@ -66,7 +77,7 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: Originated from keepers, to revoke an unfinished request
     }
 
-    function cancelMintRequest(uint256 _groupId) payable public {
+    function cancelMintRequest(uint256 _groupId) public payable {
         // TODO: Originated from users, before verifyMint to cancel the btc deposit
     }
 

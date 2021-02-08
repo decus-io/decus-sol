@@ -5,9 +5,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import {ReceiptLib} from "./ReceiptLib.sol";
 
-
 contract ReceiptController is AccessControl {
-
     bytes32 public constant RECEIPT_FACTORY_ADMIN_ROLE = keccak256("RECEIPT_FACTORY_ADMIN_ROLE");
 
     event DepositRequested(uint256 indexed groupId, address indexed user, uint256 amount);
@@ -32,12 +30,15 @@ contract ReceiptController is AccessControl {
         return ReceiptLib.getReceiptStatus(receipts, groupId);
     }
 
-
     constructor(address admin) public {
         _setupRole(RECEIPT_FACTORY_ADMIN_ROLE, admin);
     }
 
-    function depositRequest(address _user, uint256 _groupId, uint256 _amountInSatoshi) external {
+    function depositRequest(
+        address _user,
+        uint256 _groupId,
+        uint256 _amountInSatoshi
+    ) external {
         require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.depositRequest(receipts, _user, _groupId, _amountInSatoshi);

@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {IAssetMeta} from "../interface/IAssetMeta.sol";
 
-
 library AssetLib {
     using SafeMath for uint256;
 
@@ -14,7 +13,11 @@ library AssetLib {
         uint256 amount;
     }
 
-    function getSatoshiValue(Asset storage _asset, IAssetMeta _meta) internal view returns (uint256) {
+    function getSatoshiValue(Asset storage _asset, IAssetMeta _meta)
+        internal
+        view
+        returns (uint256)
+    {
         return _asset.amount.div(_meta.getSatoshiDivisor(_asset.token));
     }
 }

@@ -4,7 +4,6 @@ pragma solidity >=0.6.0 <0.8.0;
 
 import "../../core/AssetLib.sol";
 
-
 contract AssetLibMock {
     AssetLib.Asset _asset;
 

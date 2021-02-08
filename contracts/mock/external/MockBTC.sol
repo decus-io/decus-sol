@@ -4,9 +4,8 @@ pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-
 contract MockBTC is ERC20 {
-    constructor (
+    constructor(
         string memory name,
         string memory symbol,
         uint8 decimals
@@ -24,17 +23,13 @@ contract MockBTC is ERC20 {
 }
 
 contract WBTC is MockBTC {
-    constructor() public MockBTC("Wrapped Bitcoin", "WBTC", 8) {
-    }
+    constructor() public MockBTC("Wrapped Bitcoin", "WBTC", 8) {}
 }
 
 contract HBTC is MockBTC {
-    constructor() public MockBTC("Huobi BTC", "HBTC", 18) {
-    }
+    constructor() public MockBTC("Huobi BTC", "HBTC", 18) {}
 }
 
 contract OtherCoin is MockBTC {
-    constructor() public MockBTC("Other ERC20", "OTHER", 18) {
-    }
+    constructor() public MockBTC("Other ERC20", "OTHER", 18) {}
 }
-

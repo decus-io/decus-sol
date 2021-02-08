@@ -4,7 +4,6 @@ pragma solidity >=0.6.0 <0.8.0;
 
 import {ReceiptLib} from "../../user/ReceiptLib.sol";
 
-
 contract ReceiptLibMock {
     ReceiptLib.ReceiptMap _map;
 
@@ -22,7 +21,11 @@ contract ReceiptLibMock {
         return _map.getReceiptStatus(_id);
     }
 
-    function depositRequest(address _user, uint256 _groupId, uint256 _amountSatoshi) public {
+    function depositRequest(
+        address _user,
+        uint256 _groupId,
+        uint256 _amountSatoshi
+    ) public {
         _map.depositRequest(_user, _groupId, _amountSatoshi);
     }
 

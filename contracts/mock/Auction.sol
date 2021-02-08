@@ -9,7 +9,7 @@ contract Auction {
     IKeeperImport keeper_contract;
     address[] assets;
 
-    constructor (IKeeperImport _contract, address[] memory _assets) public {
+    constructor(IKeeperImport _contract, address[] memory _assets) public {
         keeper_contract = _contract;
         assets = _assets;
     }

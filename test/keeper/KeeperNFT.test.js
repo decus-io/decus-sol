@@ -1,78 +1,81 @@
-const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const { BN, constants, expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
 const { ZERO_ADDRESS } = constants;
-const {expect} = require("chai");
+const { expect } = require("chai");
 
 const KeeperNFT = artifacts.require("KeeperNFT");
 
-
-contract('KeeperNFT', (accounts) => {
+/* eslint-disable no-unused-expressions */
+/* eslint-disable no-unused-vars */
+contract("KeeperNFT", (accounts) => {
     const [owner, minter, user1, user2] = accounts;
 
-    const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    const ADMIN_ROLE = web3.utils.soliditySha3('ADMIN_ROLE');
+    const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    const ADMIN_ROLE = web3.utils.soliditySha3("ADMIN_ROLE");
 
     beforeEach(async () => {
-        this.token = await KeeperNFT.new(minter)
+        this.token = await KeeperNFT.new(minter);
     });
 
-    it('role', async() => {
+    it("role", async () => {
         expect(await this.token.getRoleMember(ADMIN_ROLE, 0)).to.equal(minter);
 
         expect(await this.token.getRoleAdmin(ADMIN_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
-    })
+    });
 
-    describe('add', () => {
-        const btcPubkey = 'pubkeypubkeypubkey';
-        const tokenId = new BN('0');
+    describe("add", () => {
+        const btcPubkey = "pubkeypubkeypubkey";
+        const tokenId = new BN("0");
 
-        it('add keeper', async () => {
+        it("add keeper", async () => {
             const receipt = await this.token.mint(user1);
-            await this.token.setBtcPubkey(tokenId, btcPubkey, {from: user1});
-            expectEvent(receipt, 'Transfer', { from: ZERO_ADDRESS, to: user1, tokenId: tokenId });
+            await this.token.setBtcPubkey(tokenId, btcPubkey, { from: user1 });
+            expectEvent(receipt, "Transfer", { from: ZERO_ADDRESS, to: user1, tokenId: tokenId });
 
-            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('1');
+            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal("1");
             expect(await this.token.ownerOf(tokenId)).to.equal(user1);
             expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey);
         });
 
-        it('add btcPubkey revert', async () => {
+        it("add btcPubkey revert", async () => {
             const receipt = await this.token.mint(user1);
-            await expectRevert(this.token.setBtcPubkey(tokenId, btcPubkey, {from: user2}),
-                'require admin or owner of tokenId');
+            await expectRevert(
+                this.token.setBtcPubkey(tokenId, btcPubkey, { from: user2 }),
+                "require admin or owner of tokenId"
+            );
         });
     });
 
-    describe('nft transfer', () => {
-        const btcPubkey = 'pubkeypubkeypubkey';
-        const btcPubkey2 = 'pubkeypubkeypubkey2';
-        const tokenId = new BN('0');
+    describe("nft transfer", () => {
+        const btcPubkey = "pubkeypubkeypubkey";
+        const btcPubkey2 = "pubkeypubkeypubkey2";
+        const tokenId = new BN("0");
 
         beforeEach(async () => {
             await this.token.mint(user1);
-            await this.token.setBtcPubkey(tokenId, btcPubkey, {from: user1});
+            await this.token.setBtcPubkey(tokenId, btcPubkey, { from: user1 });
         });
 
-        it('tokenid', async () => {
-            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('1');
+        it("tokenid", async () => {
+            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal("1");
             expect(await this.token.ownerOf(tokenId)).to.equal(user1);
             expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey);
 
-            await this.token.approve(user2, tokenId, {from: user1});
-            await this.token.transferFrom(user1, user2, tokenId, {from: user1});
+            await this.token.approve(user2, tokenId, { from: user1 });
+            await this.token.transferFrom(user1, user2, tokenId, { from: user1 });
 
-            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal('0');
+            expect(await this.token.balanceOf(user1)).to.be.bignumber.equal("0");
             expect(await this.token.ownerOf(tokenId)).to.equal(user2);
 
-            await this.token.setBtcPubkey(tokenId, btcPubkey2, {from: user2});
+            await this.token.setBtcPubkey(tokenId, btcPubkey2, { from: user2 });
             expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey2);
         });
     });
 
-    describe('role transfer', () => {
+    describe("role transfer", () => {
         // TODO:
     });
 
-    describe('owner transfer', () => {
+    describe("owner transfer", () => {
         // TODO:
     });
 });

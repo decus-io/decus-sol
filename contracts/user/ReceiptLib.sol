@@ -52,13 +52,22 @@ library ReceiptLib {
         uint256 _amountInSatoshi
     ) internal {
         Receipt storage receipt = _map.receipts[_groupId];
-        require(receipt.status == Status.Available, "receipt is in use");
-        require(receipt.amountInSatoshi == 0, "receipt amount is not empty");
+        require(receipt.status < Status.DepositReceived, "receipt is in use");
 
         receipt.user = _user;
         receipt.groupId = _groupId;
         receipt.amountInSatoshi = _amountInSatoshi;
         receipt.status = Status.DepositRequested;
+    }
+
+    function requestRevoked(ReceiptMap storage _map, uint256 _groupId) internal {
+        Receipt storage receipt = _map.receipts[_groupId];
+        require(receipt.status < Status.DepositReceived, "receipt is in use");
+
+        receipt.user = address(0);
+        receipt.groupId = _groupId;
+        receipt.amountInSatoshi = 0;
+        receipt.status = Status.Available;
     }
 
     function depositReceived(ReceiptMap storage _map, uint256 _groupId) internal {

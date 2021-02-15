@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,6 +14,12 @@ import {IKeeperImport} from "../interface/IKeeperImport.sol";
 contract KeeperRegistry is AccessControl, IKeeperImport {
     using SafeMath for uint256;
     using CollateralLib for CollateralLib.CollateralMap;
+
+    struct Context {
+        uint256 base;
+        uint256 id;
+        uint256 assetLength;
+    }
 
     // events
     event KeeperAdded(
@@ -104,48 +111,48 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
     function importKeepers(
         address _from,
         address[] calldata _assets,
-        uint256[] calldata _amounts,
         address[] calldata _keepers,
-        uint256[] calldata _keeper_amounts
+        uint256[] calldata _keeper_amounts,
+        string[] calldata _btcPubkeys
     ) external override {
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
-        require(_assets.length == _amounts.length, "length not match");
+        Context memory context = Context({base: 0, id: 0, assetLength: _assets.length});
 
-        uint256 _keeper_num = _keepers.length;
-        uint256 _asset_num = _assets.length;
-
+        require(_keepers.length == _btcPubkeys.length, "");
         require(
-            _keeper_amounts.length == _asset_num.mul(_keeper_num),
+            _keeper_amounts.length == context.assetLength.mul(_keepers.length),
             "amounts length does not match"
         );
 
         // check amounts match
-        uint256[] memory _sum_amounts = new uint256[](_asset_num);
-        for (uint256 i = 0; i < _keeper_num; i++) {
-            uint256 base = i.mul(_asset_num);
-            for (uint256 j = 0; j < _asset_num; j++) {
+        uint256[] memory _sum_amounts = new uint256[](context.assetLength);
+        for (uint256 i = 0; i < _keepers.length; i++) {
+            uint256 base = i.mul(context.assetLength);
+            for (uint256 j = 0; j < context.assetLength; j++) {
                 _sum_amounts[j] = _sum_amounts[j].add(_keeper_amounts[base + j]);
             }
         }
-        for (uint256 i = 0; i < _asset_num; i++) {
-            require(_amounts[i] == _sum_amounts[i], "amounts do not match");
-        }
 
         // transfer
-        for (uint8 i = 0; i < _asset_num; i++) {
+        for (uint8 i = 0; i < context.assetLength; i++) {
             require(
-                IERC20(_assets[i]).transferFrom(_from, address(this), _amounts[i]),
+                IERC20(_assets[i]).transferFrom(_from, address(this), _sum_amounts[i]),
                 "transfer failed"
             );
         }
 
         // add keeper
-        for (uint256 i = 0; i < _keeper_num; i++) {
-            uint256 base = i.mul(_asset_num);
-            _addKeeper(_keepers[i], _assets, _keeper_amounts[base:base + _asset_num]);
+        for (uint256 i = 0; i < _keepers.length; i++) {
+            context.base = i.mul(context.assetLength);
+            context.id = _addKeeper(
+                _keepers[i],
+                _assets,
+                _keeper_amounts[context.base:context.base + context.assetLength]
+            );
+            collateral_token.setBtcPubkey(context.id, _btcPubkeys[i]);
         }
 
-        emit KeeperImported(_from, _assets, _amounts, _keepers, _keeper_amounts);
+        emit KeeperImported(_from, _assets, _sum_amounts, _keepers, _keeper_amounts);
     }
 
     function _addKeeper(

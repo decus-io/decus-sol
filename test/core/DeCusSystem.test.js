@@ -1,5 +1,6 @@
-const { BN } = require("@openzeppelin/test-helpers");
+const { BN, expectRevert } = require("@openzeppelin/test-helpers");
 const { expect } = require("chai");
+const { advanceTimeAndBlock } = require("../helper");
 
 const WBTC = artifacts.require("WBTC");
 const HBTC = artifacts.require("HBTC");
@@ -15,7 +16,7 @@ const DeCusSystem = artifacts.require("DeCusSystem");
 
 /* eslint-disable no-unused-expressions */
 contract("DeCusSystem", (accounts) => {
-    const [owner, keeper1, keeper2, user1] = accounts;
+    const [owner, keeper1, keeper2, user1, user2] = accounts;
 
     // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -58,6 +59,7 @@ contract("DeCusSystem", (accounts) => {
             this.ebtc.address,
             this.group_registry.address,
             this.receipts.address,
+            this.keeper_nft.address,
             { from: owner }
         );
 
@@ -109,6 +111,31 @@ contract("DeCusSystem", (accounts) => {
 
     describe("overall state transition", () => {
         it("round", async () => {
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 });
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
+
+            await expectRevert(
+                this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 }),
+                "previous request has not completed yet"
+            );
+
+            advanceTimeAndBlock(0);
+            advanceTimeAndBlock(0);
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
+
+            await expectRevert(
+                this.decus_system.cancelMintRequest(group1Id, {
+                    from: user2,
+                }),
+                "only applicant"
+            );
+
+            await this.decus_system.cancelMintRequest(group1Id, {
+                from: user1,
+            });
+            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(0));
+
             await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
 

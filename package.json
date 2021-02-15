@@ -21,11 +21,11 @@
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-promise": "^4.2.1",
         "ethers": "^5.0.26",
+        "mocha": "^8.3.0",
         "prettier": "^2.2.1",
         "prettier-plugin-solidity": "^1.0.0-beta.3",
-        "truffle-plugin-verify": "^0.5.4",
         "solidity-coverage": "^0.7.14",
-        "mocha": "^8.3.0"
+        "truffle-plugin-verify": "^0.5.4"
     },
     "scripts": {
         "check": "npm run lint && prettier --ignore-path .gitignore -c .",

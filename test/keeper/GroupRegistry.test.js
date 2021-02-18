@@ -74,12 +74,9 @@ contract("GroupRegistry", (accounts) => {
         });
 
         it("add", async () => {
-            const rsp = await this.group_registry.addGroup(
-                this.keepers,
-                btcAddress,
-                amount,
-                { from: decusSystem }
-            );
+            const rsp = await this.group_registry.addGroup(this.keepers, btcAddress, amount, {
+                from: decusSystem,
+            });
             expectEvent(rsp, "GroupAdded", {
                 id: groupId,
                 keepers: this.keepers,

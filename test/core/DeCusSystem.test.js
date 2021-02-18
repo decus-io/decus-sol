@@ -109,8 +109,10 @@ contract("DeCusSystem", (accounts) => {
     });
 
     it("group id", async () => {
-        expect(await this.group_registry.getGroupId(group1BtcAddress)).to.be.bignumber.equal(group1Id);
-    })
+        expect(await this.group_registry.getGroupId(group1BtcAddress)).to.be.bignumber.equal(
+            group1Id
+        );
+    });
 
     describe("overall state transition", () => {
         it("round", async () => {

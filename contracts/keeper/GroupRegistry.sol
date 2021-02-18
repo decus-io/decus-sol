@@ -21,7 +21,7 @@ contract GroupRegistry is AccessControl {
     // var
     Counters.Counter private _id_gen;
     GroupLib.GroupMap groups;
-    mapping(string => uint256) address2id;  // id starts from 1
+    mapping(string => uint256) address2id; // id starts from 1
 
     constructor(address admin, address group_admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);

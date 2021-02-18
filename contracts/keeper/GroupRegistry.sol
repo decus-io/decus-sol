@@ -39,6 +39,10 @@ contract GroupRegistry is AccessControl {
         return groups.getGroupAllowance(_id);
     }
 
+    function getGroupLastTimestamp(uint256 _id) external view returns (uint256) {
+        return groups.getGroupLastTimestamp(_id);
+    }
+
     function addGroup(
         uint256 _id,
         uint256[] calldata _keepers,
@@ -62,6 +66,16 @@ contract GroupRegistry is AccessControl {
         groups.deleteGroup(_id);
 
         emit GroupDeleted(_id);
+    }
+
+    function emptyGroupLastTimestamp(uint256 _id) external {
+        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        groups.emptyGroupLastTimestamp(_id);
+    }
+
+    function requestReceived(uint256 _id, uint256 _lastTimestamp) external {
+        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        groups.setGroupLastTimestamp(_id, _lastTimestamp);
     }
 
     function depositReceived(uint256 _id, uint256 _amountInSatoshi) external {

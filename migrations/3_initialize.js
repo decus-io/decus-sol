@@ -19,7 +19,12 @@ const migration = async (deployer, network, accounts) => {
     }
 
     const decusSystem = await DeCusSystem.deployed();
-    decusSystem.setDependencies(EBTC.address, GroupRegistry.address, ReceiptController.address);
+    decusSystem.setDependencies(
+        EBTC.address,
+        GroupRegistry.address,
+        ReceiptController.address,
+        KeeperNFT.address
+    );
     console.log(
         "DeCusSystem set dependencies: %s %s %s",
         EBTC.address,

@@ -26,15 +26,6 @@ contract("ReceiptLib", (accounts) => {
         expect(await this.lib.getReceiptStatus(this.groupId)).to.be.bignumber.equal(new BN(1));
     });
 
-    it("request twice", async () => {
-        await this.lib.depositRequest(user1, this.groupId, this.amount);
-
-        await expectRevert(
-            this.lib.depositRequest(user2, this.groupId, this.amount),
-            "receipt is in use"
-        );
-    });
-
     describe("state", () => {
         beforeEach(async () => {
             await this.lib.depositRequest(user1, this.groupId, this.amount);

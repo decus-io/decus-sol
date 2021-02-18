@@ -12,6 +12,7 @@ import {BTCUtils} from "../utils/BTCUtils.sol";
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
 import {ReceiptController} from "../user/ReceiptController.sol";
+import {KeeperNFT} from "../keeper/KeeperNFT.sol";
 
 contract DeCusSystem is AccessControl, Pausable {
     using SafeMath for uint256;
@@ -19,24 +20,29 @@ contract DeCusSystem is AccessControl, Pausable {
     event MintRequest(uint256 indexed groupId, address indexed from, uint256 amountInSatoshi);
     event MintReceived(uint256 indexed groupId);
 
+    uint256 public constant MINT_REQUEST_GRACE_PERIOD = 8 hours;
+
     EBTC ebtc;
     GroupRegistry groups;
     ReceiptController receiptController;
+    KeeperNFT keeperNFT;
 
-    constructor(address admin) public {
-        _setupRole(DEFAULT_ADMIN_ROLE, admin);
+    constructor(address _admin) public {
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
     function setDependencies(
         EBTC _ebtc,
         GroupRegistry _groups,
-        ReceiptController _receipts
+        ReceiptController _receipts,
+        KeeperNFT _keeperNFT
     ) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
         groups = _groups;
         receiptController = _receipts;
+        keeperNFT = _keeperNFT;
     }
 
     function addGroup(
@@ -59,7 +65,12 @@ contract DeCusSystem is AccessControl, Pausable {
             "receipt need to fill all allowance"
         );
         require(groups.isGroupEmpty(_groupId), "current version only support empty group");
+        require(
+            groups.getGroupLastTimestamp(_groupId).add(MINT_REQUEST_GRACE_PERIOD) < block.timestamp,
+            "previous request has not completed yet"
+        );
 
+        groups.requestReceived(_groupId, block.timestamp);
         receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
 
         emit MintRequest(_groupId, _msgSender(), _amountInSatoshi);
@@ -73,12 +84,16 @@ contract DeCusSystem is AccessControl, Pausable {
         _mintToUser(_groupId);
     }
 
-    function revokeMintRequest(uint256 _groupId, string memory _proofKeepers) public {
-        // TODO: Originated from keepers, to revoke an unfinished request
+    function revokeMintRequest(uint256 _groupId, uint256 _tokenId) public {
+        // Originated from keepers, to revoke an unfinished request
+        require(keeperNFT.ownerOf(_tokenId) == _msgSender(), "only keepers");
+        _revoke(_groupId);
     }
 
     function cancelMintRequest(uint256 _groupId) public payable {
-        // TODO: Originated from users, before verifyMint to cancel the btc deposit
+        // Originated from users, before verifyMint to cancel the btc deposit
+        require(receiptController.getUserAddress(_groupId) == _msgSender(), "only applicant");
+        _revoke(_groupId);
     }
 
     function _verifyDeposit(uint256 _groupId, string memory _proofPlaceholder) internal {
@@ -95,6 +110,11 @@ contract DeCusSystem is AccessControl, Pausable {
         uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_groupId);
         // TODO: add fee deduction
         ebtc.mint(user, amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC()));
+    }
+
+    function _revoke(uint256 _groupId) internal {
+        groups.emptyGroupLastTimestamp(_groupId);
+        receiptController.revokeRequest(_groupId);
     }
 
     function burnRequest(uint256 _groupId) public {

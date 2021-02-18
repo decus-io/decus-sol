@@ -156,15 +156,12 @@ contract("KeeperRegistry", (accounts) => {
             const u2Wbtc = new BN(300);
             const u2Hbtc = new BN(0);
 
-            const allWbtc = u1Wbtc.add(u2Wbtc);
-            const allHbtc = u1Hbtc.add(u2Hbtc);
-
             const rsp = await this.keeperRegistry.importKeepers(
                 auction,
                 [this.wbtc.address, this.hbtc.address],
-                [allWbtc, allHbtc],
                 [user1, user2],
                 [u1Wbtc, u1Hbtc, u2Wbtc, u2Hbtc],
+                ["pubkeypubkeypubkey1", "pubkeypubkeypubkey2"],
                 { from: keeperAdmin }
             );
             expectEvent(rsp, "KeeperImported", {

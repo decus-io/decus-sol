@@ -31,7 +31,7 @@ contract("DeCusSystem", (accounts) => {
     const keeperWbtcAmount = new BN(600);
     const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
 
-    const group1Id = new BN(111);
+    const group1Id = new BN(1);
     const group1BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
     const group1BtcSatoshiAmount = new BN(200000);
 
@@ -88,7 +88,6 @@ contract("DeCusSystem", (accounts) => {
         this.group1Keepers = [this.keeper1Id, this.keeper2Id];
 
         await this.decus_system.addGroup(
-            group1Id,
             this.group1Keepers,
             group1BtcAddress,
             group1BtcSatoshiAmount,
@@ -108,6 +107,10 @@ contract("DeCusSystem", (accounts) => {
         expect(await this.group_registry.hasRole(GROUP_ADMIN_ROLE, this.decus_system.address)).to.be
             .true;
     });
+
+    it("group id", async () => {
+        expect(await this.group_registry.getGroupId(group1BtcAddress)).to.be.bignumber.equal(group1Id);
+    })
 
     describe("overall state transition", () => {
         it("round", async () => {

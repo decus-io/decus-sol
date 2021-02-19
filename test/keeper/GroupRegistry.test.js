@@ -54,7 +54,7 @@ contract("GroupRegistry", (accounts) => {
     });
 
     describe("add", () => {
-        const groupId = new BN(111);
+        const groupId = new BN(1);
         const amount = new BN(500);
         const btcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
 
@@ -74,13 +74,9 @@ contract("GroupRegistry", (accounts) => {
         });
 
         it("add", async () => {
-            const rsp = await this.group_registry.addGroup(
-                groupId,
-                this.keepers,
-                btcAddress,
-                amount,
-                { from: decusSystem }
-            );
+            const rsp = await this.group_registry.addGroup(this.keepers, btcAddress, amount, {
+                from: decusSystem,
+            });
             expectEvent(rsp, "GroupAdded", {
                 id: groupId,
                 keepers: this.keepers,
@@ -88,6 +84,7 @@ contract("GroupRegistry", (accounts) => {
                 maxSatoshi: amount,
             });
 
+            expect(await this.group_registry.getGroupId(btcAddress)).to.be.bignumber.equal(groupId);
             expect(await this.group_registry.exist(groupId)).to.be.true;
             expect(await this.group_registry.getGroupAllowance(groupId)).to.be.bignumber.equal(
                 amount
@@ -95,26 +92,27 @@ contract("GroupRegistry", (accounts) => {
         });
 
         it("reject dup id", async () => {
-            await this.group_registry.addGroup(groupId, this.keepers, btcAddress, amount, {
+            await this.group_registry.addGroup(this.keepers, btcAddress, amount, {
                 from: decusSystem,
             });
             await expectRevert(
-                this.group_registry.addGroup(groupId, this.keepers, btcAddress, amount, {
+                this.group_registry.addGroup(this.keepers, btcAddress, amount, {
                     from: decusSystem,
                 }),
-                "group id already exist"
+                "group address already exist"
             );
         });
 
         describe("delete", () => {
             beforeEach(async () => {
-                await this.group_registry.addGroup(groupId, this.keepers, btcAddress, amount, {
+                await this.group_registry.addGroup(this.keepers, btcAddress, amount, {
                     from: decusSystem,
                 });
             });
             it("delete success", async () => {
-                const rsp = await this.group_registry.deleteGroup(groupId, { from: decusSystem });
-                expectEvent(rsp, "GroupDeleted", { id: groupId });
+                const id = await this.group_registry.getGroupId(btcAddress);
+                const rsp = await this.group_registry.deleteGroup(id, { from: decusSystem });
+                expectEvent(rsp, "GroupDeleted", { id: id });
             });
             it("delete not exist id", async () => {
                 await expectRevert(

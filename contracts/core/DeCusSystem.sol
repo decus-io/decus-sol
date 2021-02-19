@@ -12,6 +12,7 @@ import {BTCUtils} from "../utils/BTCUtils.sol";
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
 import {ReceiptController} from "../user/ReceiptController.sol";
+import {KeeperNFT} from "../keeper/KeeperNFT.sol";
 
 contract DeCusSystem is AccessControl, Pausable {
     using SafeMath for uint256;
@@ -24,6 +25,7 @@ contract DeCusSystem is AccessControl, Pausable {
     EBTC ebtc;
     GroupRegistry groups;
     ReceiptController receiptController;
+    KeeperNFT keeperNFT;
 
     constructor(address _admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -32,24 +34,25 @@ contract DeCusSystem is AccessControl, Pausable {
     function setDependencies(
         EBTC _ebtc,
         GroupRegistry _groups,
-        ReceiptController _receipts
+        ReceiptController _receipts,
+        KeeperNFT _keeperNFT
     ) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
         groups = _groups;
         receiptController = _receipts;
+        keeperNFT = _keeperNFT;
     }
 
     function addGroup(
-        uint256 _id,
         uint256[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) public {
         // TODO: set group admin role
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require group admin role");
-        groups.addGroup(_id, _keepers, _btcAddress, _maxSatoshi);
+        groups.addGroup(_keepers, _btcAddress, _maxSatoshi);
     }
 
     function mintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {

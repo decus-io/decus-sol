@@ -46,14 +46,13 @@ contract DeCusSystem is AccessControl, Pausable {
     }
 
     function addGroup(
-        uint256 _id,
         uint256[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) public {
         // TODO: set group admin role
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require group admin role");
-        groups.addGroup(_id, _keepers, _btcAddress, _maxSatoshi);
+        groups.addGroup(_keepers, _btcAddress, _maxSatoshi);
     }
 
     function mintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {

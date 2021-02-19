@@ -36,6 +36,21 @@ library GroupLib {
         return _map.groups[_map.id2index[_id] - 1].currSatoshi == 0;
     }
 
+    function isGroupKeeper(
+        GroupMap storage _map,
+        uint256 _id,
+        uint256 _keeperID
+    ) internal view returns (bool) {
+        uint256[] memory keepers = _map.groups[_map.id2index[_id] - 1].keepers;
+        for (uint256 i = 0; i < keepers.length; i++) {
+            if (keepers[i] == _keeperID) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     function getGroupAllowance(GroupMap storage _map, uint256 _id) internal view returns (uint256) {
         return _map.groups[_map.id2index[_id] - 1].allowance();
     }

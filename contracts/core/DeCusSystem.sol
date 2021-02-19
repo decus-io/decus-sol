@@ -12,7 +12,6 @@ import {BTCUtils} from "../utils/BTCUtils.sol";
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
 import {ReceiptController} from "../user/ReceiptController.sol";
-import {KeeperNFT} from "../keeper/KeeperNFT.sol";
 
 contract DeCusSystem is AccessControl, Pausable {
     using SafeMath for uint256;
@@ -25,7 +24,6 @@ contract DeCusSystem is AccessControl, Pausable {
     EBTC ebtc;
     GroupRegistry groups;
     ReceiptController receiptController;
-    KeeperNFT keeperNFT;
 
     constructor(address _admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -34,15 +32,13 @@ contract DeCusSystem is AccessControl, Pausable {
     function setDependencies(
         EBTC _ebtc,
         GroupRegistry _groups,
-        ReceiptController _receipts,
-        KeeperNFT _keeperNFT
+        ReceiptController _receipts
     ) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
         groups = _groups;
         receiptController = _receipts;
-        keeperNFT = _keeperNFT;
     }
 
     function addGroup(
@@ -84,9 +80,9 @@ contract DeCusSystem is AccessControl, Pausable {
         _mintToUser(_groupId);
     }
 
-    function revokeMintRequest(uint256 _groupId, uint256 _tokenId) public {
+    function revokeMintRequest(uint256 _groupId, uint256 _keeperID) public {
         // Originated from keepers, to revoke an unfinished request
-        require(keeperNFT.ownerOf(_tokenId) == _msgSender(), "only keepers");
+        require(groups.isGroupKeeper(_groupId, _keeperID), "only keepers");
         _revoke(_groupId);
     }
 

@@ -59,7 +59,6 @@ contract("DeCusSystem", (accounts) => {
             this.ebtc.address,
             this.group_registry.address,
             this.receipts.address,
-            this.keeper_nft.address,
             { from: owner }
         );
 

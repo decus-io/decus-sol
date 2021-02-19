@@ -48,6 +48,20 @@ library GroupLib {
         return _map.groups[_map.id2index[_id] - 1].lastTimestamp;
     }
 
+    function isGroupMember(GroupMap storage _map, uint256 _groupId, uint256 _keeperId) internal view returns (bool) {
+        uint256[] storage keepers = _map.groups[_map.id2index[_groupId] - 1].keepers;
+        for (uint256 i = 0; i < keepers.length; i++) {
+            if (keepers[i] == _keeperId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function keepers(GroupMap storage _map, uint256 _groupId) internal view returns (uint256[] storage) {
+        return _map.groups[_map.id2index[_groupId] - 1].keepers;
+    }
+
     function addGroupSatoshi(
         GroupMap storage _map,
         uint256 _id,

@@ -49,14 +49,6 @@ contract GroupRegistry is AccessControl {
         return groups.getGroupLastTimestamp(_id);
     }
 
-    function isGroupMember(uint256 _groupId, uint256 _keeperId) external view returns (bool) {
-        return groups.isGroupMember(_groupId, _keeperId);
-    }
-
-    function keepers(uint256 _groupId) external view returns (uint256[] memory) {
-        return groups.keepers(_groupId);
-    }
-
     function getGroupId(string memory _btcAddress) external view returns (uint256) {
         return address2id[_btcAddress];
     }

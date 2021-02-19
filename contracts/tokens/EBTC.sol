@@ -7,9 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-import "../interface/ERC20Mintable.sol";
-
-contract EBTC is ERC20Mintable, ERC20Burnable, ERC20Pausable, AccessControl {
+contract EBTC is ERC20Burnable, ERC20Pausable, AccessControl {
     string private constant _name = "Exchangeable BTC";
     string private constant _symbol = "EBTC";
 
@@ -23,7 +21,7 @@ contract EBTC is ERC20Mintable, ERC20Burnable, ERC20Pausable, AccessControl {
         _setupRole(PAUSER_ROLE, admin);
     }
 
-    function mint(address to, uint256 amount) public override {
+    function mint(address to, uint256 amount) public {
         require(hasRole(MINTER_ROLE, _msgSender()), "require minter role");
         _mint(to, amount);
     }

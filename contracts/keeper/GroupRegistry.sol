@@ -53,11 +53,7 @@ contract GroupRegistry is AccessControl {
         return address2id[_btcAddress];
     }
 
-    function isGroupMember(uint256 _groupId, uint256 _keeperId)
-        external
-        view
-        returns (bool)
-    {
+    function isGroupMember(uint256 _groupId, uint256 _keeperId) external view returns (bool) {
         return groups.isGroupMember(_groupId, _keeperId);
     }
 

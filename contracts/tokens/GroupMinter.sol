@@ -6,12 +6,12 @@ import {KeeperRegistry} from "../keeper/KeeperRegistry.sol";
 
 import "../interface/ERC20Mintable.sol";
 
-contract GroupMiner {
+contract GroupMinter {
     event Submission(bytes32 indexed txid);
     event Confirmation(address indexed keeper, bytes32 indexed txid);
     event Revocation(address indexed keeper, bytes32 indexed txid);
     event Minted(bytes32 indexed txid);
-    
+
     struct MintData {
         uint256 groupId;
         address destination;
@@ -22,8 +22,8 @@ contract GroupMiner {
 
     // txid => MintData
     // only one mint request on one bitcoin transaction
-    mapping (bytes32 => MintData) mintData;
-    mapping (bytes32 => mapping (uint256 => bool)) confirmations;
+    mapping(bytes32 => MintData) mintData;
+    mapping(bytes32 => mapping(uint256 => bool)) confirmations;
 
     modifier onlyGroupMember(uint256 _groupId, address _keeper) {
         require(_groupId != 0, "error group");
@@ -59,7 +59,7 @@ contract GroupMiner {
         }
         _;
     }
-    
+
     modifier notNull(address _address) {
         if (_address == address(0)) {
             revert("addresss is zero");
@@ -71,7 +71,11 @@ contract GroupMiner {
     GroupRegistry groups;
     KeeperRegistry keepers;
 
-    constructor(ERC20Mintable _token, GroupRegistry _groups,  KeeperRegistry _keepers) public {
+    constructor(
+        ERC20Mintable _token,
+        GroupRegistry _groups,
+        KeeperRegistry _keepers
+    ) public {
         token = _token;
         groups = _groups;
         keepers = _keepers;
@@ -88,8 +92,8 @@ contract GroupMiner {
         }
 
         uint256[] memory _keepers = groups.keepers(groupId);
-        uint count = 0;
-        for (uint i = 0; i < _keepers.length; i++) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < _keepers.length; i++) {
             if (confirmations[_txid][_keepers[i]]) {
                 count += 1;
             }
@@ -104,13 +108,17 @@ contract GroupMiner {
         return mintData[_txid].minted;
     }
 
-    function getMintData(bytes32 _txid) external view returns (
-        uint256 groupId,
-        address destination,
-        uint8 voutIndex,
-        uint256 value,
-        bool minted
-    ) {
+    function getMintData(bytes32 _txid)
+        external
+        view
+        returns (
+            uint256 groupId,
+            address destination,
+            uint8 voutIndex,
+            uint256 value,
+            bool minted
+        )
+    {
         MintData storage data = mintData[_txid];
         return (data.groupId, data.destination, data.voutIndex, data.value, data.minted);
     }
@@ -133,7 +141,8 @@ contract GroupMiner {
         emit Submission(_txid);
     }
 
-    function confirm(bytes32 _txid) public
+    function confirm(bytes32 _txid)
+        public
         onlyConfirmer(_txid, msg.sender)
         notConfirmed(_txid, msg.sender)
     {
@@ -143,7 +152,8 @@ contract GroupMiner {
         execute(_txid);
     }
 
-    function revoke(bytes32 _txid) public
+    function revoke(bytes32 _txid)
+        public
         onlyConfirmer(_txid, msg.sender)
         confirmed(_txid, msg.sender)
     {

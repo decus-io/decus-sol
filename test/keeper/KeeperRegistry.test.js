@@ -62,7 +62,7 @@ contract("KeeperRegistry", (accounts) => {
     });
 
     describe("one keeper", () => {
-        const tokenId = new BN(0);
+        const tokenId = new BN(1);
         const amount = new BN(500);
 
         beforeEach(async () => {

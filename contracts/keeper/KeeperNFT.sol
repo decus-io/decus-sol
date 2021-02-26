@@ -18,6 +18,7 @@ contract KeeperNFT is AccessControl, ERC721Burnable {
 
     constructor(address admin) public ERC721("Keeper Collateral Token", "KCT") {
         _setupRole(ADMIN_ROLE, admin);
+        _id_gen.increment(); // starts from 1
     }
 
     function mint(address keeper) external returns (uint256) {

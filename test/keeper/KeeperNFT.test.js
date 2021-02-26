@@ -24,7 +24,7 @@ contract("KeeperNFT", (accounts) => {
 
     describe("add", () => {
         const btcPubkey = "pubkeypubkeypubkey";
-        const tokenId = new BN("0");
+        const tokenId = new BN(1);
 
         it("add keeper", async () => {
             const receipt = await this.token.mint(user1);
@@ -48,7 +48,7 @@ contract("KeeperNFT", (accounts) => {
     describe("nft transfer", () => {
         const btcPubkey = "pubkeypubkeypubkey";
         const btcPubkey2 = "pubkeypubkeypubkey2";
-        const tokenId = new BN("0");
+        const tokenId = new BN(1);
 
         beforeEach(async () => {
             await this.token.mint(user1);

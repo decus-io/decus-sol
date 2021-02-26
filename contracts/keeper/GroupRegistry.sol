@@ -30,7 +30,7 @@ contract GroupRegistry is AccessControl {
 
         _setupRole(GROUP_ADMIN_ROLE, group_admin);
 
-        _id_gen.increment();
+        _id_gen.increment(); // id starts from 1
     }
 
     function exist(uint256 _id) external view returns (bool) {

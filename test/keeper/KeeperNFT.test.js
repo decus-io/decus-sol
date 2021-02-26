@@ -1,4 +1,4 @@
-const { BN, constants, expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
+const { BN, constants, expectEvent } = require("@openzeppelin/test-helpers");
 const { ZERO_ADDRESS } = constants;
 const { expect } = require("chai");
 
@@ -28,20 +28,10 @@ contract("KeeperNFT", (accounts) => {
 
         it("add keeper", async () => {
             const receipt = await this.token.mint(user1);
-            await this.token.setBtcPubkey(tokenId, btcPubkey, { from: user1 });
             expectEvent(receipt, "Transfer", { from: ZERO_ADDRESS, to: user1, tokenId: tokenId });
 
             expect(await this.token.balanceOf(user1)).to.be.bignumber.equal("1");
             expect(await this.token.ownerOf(tokenId)).to.equal(user1);
-            expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey);
-        });
-
-        it("add btcPubkey revert", async () => {
-            const receipt = await this.token.mint(user1);
-            await expectRevert(
-                this.token.setBtcPubkey(tokenId, btcPubkey, { from: user2 }),
-                "require admin or owner of tokenId"
-            );
         });
     });
 
@@ -52,22 +42,17 @@ contract("KeeperNFT", (accounts) => {
 
         beforeEach(async () => {
             await this.token.mint(user1);
-            await this.token.setBtcPubkey(tokenId, btcPubkey, { from: user1 });
         });
 
         it("tokenid", async () => {
             expect(await this.token.balanceOf(user1)).to.be.bignumber.equal("1");
             expect(await this.token.ownerOf(tokenId)).to.equal(user1);
-            expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey);
 
             await this.token.approve(user2, tokenId, { from: user1 });
             await this.token.transferFrom(user1, user2, tokenId, { from: user1 });
 
             expect(await this.token.balanceOf(user1)).to.be.bignumber.equal("0");
             expect(await this.token.ownerOf(tokenId)).to.equal(user2);
-
-            await this.token.setBtcPubkey(tokenId, btcPubkey2, { from: user2 });
-            expect(await this.token.tokenURI(tokenId)).to.equal(btcPubkey2);
         });
     });
 

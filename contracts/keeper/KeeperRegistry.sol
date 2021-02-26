@@ -80,8 +80,7 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
     function addKeeper(
         address _keeper,
         address[] calldata _assets,
-        uint256[] calldata _amounts,
-        string memory _btcPubkey
+        uint256[] calldata _amounts
     ) external {
         // transfer assets
         for (uint256 i = 0; i < _assets.length; i++) {
@@ -91,9 +90,7 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
             );
         }
 
-        uint256 id = _addKeeper(_keeper, _assets, _amounts);
-
-        collateral_token.setBtcPubkey(id, _btcPubkey);
+        _addKeeper(_keeper, _assets, _amounts);
     }
 
     function deleteKeeper(uint256 _id) external {
@@ -112,13 +109,11 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         address _from,
         address[] calldata _assets,
         address[] calldata _keepers,
-        uint256[] calldata _keeper_amounts,
-        string[] calldata _btcPubkeys
+        uint256[] calldata _keeper_amounts
     ) external override {
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
         Context memory context = Context({base: 0, id: 0, assetLength: _assets.length});
 
-        require(_keepers.length == _btcPubkeys.length, "");
         require(
             _keeper_amounts.length == context.assetLength.mul(_keepers.length),
             "amounts length does not match"
@@ -149,7 +144,6 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
                 _assets,
                 _keeper_amounts[context.base:context.base + context.assetLength]
             );
-            collateral_token.setBtcPubkey(context.id, _btcPubkeys[i]);
         }
 
         emit KeeperImported(_from, _assets, _sum_amounts, _keepers, _keeper_amounts);

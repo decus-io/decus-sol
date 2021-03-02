@@ -161,7 +161,6 @@ contract("KeeperRegistry", (accounts) => {
                 [this.wbtc.address, this.hbtc.address],
                 [user1, user2],
                 [u1Wbtc, u1Hbtc, u2Wbtc, u2Hbtc],
-                ["pubkeypubkeypubkey1", "pubkeypubkeypubkey2"],
                 { from: keeperAdmin }
             );
             expectEvent(rsp, "KeeperImported", {

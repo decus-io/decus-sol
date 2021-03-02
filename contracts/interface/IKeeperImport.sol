@@ -7,7 +7,6 @@ interface IKeeperImport {
         address _from,
         address[] calldata _assets,
         address[] calldata _keepers,
-        uint256[] calldata _keeper_amounts,
-        string[] calldata _btcPubkeys
+        uint256[] calldata _keeper_amounts
     ) external;
 }

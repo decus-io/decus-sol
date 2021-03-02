@@ -59,7 +59,6 @@ contract("DeCusSystem", (accounts) => {
             this.ebtc.address,
             this.group_registry.address,
             this.receipts.address,
-            this.keeper_nft.address,
             { from: owner }
         );
 
@@ -154,7 +153,7 @@ contract("DeCusSystem", (accounts) => {
             await this.decus_system.burnRequest(group1Id, { from: user1 });
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(3));
 
-            await this.decus_system.verifyBurn(group1Id, { from: user1 });
+            await this.decus_system.verifyBurn(group1Id, "proofplaceholder", { from: user1 });
             expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(0));
         });
     });

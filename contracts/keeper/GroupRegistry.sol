@@ -41,6 +41,10 @@ contract GroupRegistry is AccessControl {
         return groups.isGroupEmpty(_id);
     }
 
+    function isGroupKeeper(uint256 _id, uint256 _keeperID) external view returns (bool) {
+        return groups.isGroupKeeper(_id, _keeperID);
+    }
+
     function getGroupAllowance(uint256 _id) external view returns (uint256) {
         return groups.getGroupAllowance(_id);
     }

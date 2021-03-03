@@ -90,7 +90,7 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount) {
 
     return sigUtil.signTypedData_v4(Buffer.from(privateKey, "hex"), { data: typedData });
 
-    //return signer._signTypedData(domain, types, value);
+    // return signer._signTypedData(domain, types, value);
 }
 
 module.exports = {

@@ -1,6 +1,7 @@
 const { BN, expectRevert } = require("@openzeppelin/test-helpers");
 const { expect } = require("chai");
 const { ethers, providers, BigNumber } = require("ethers");
+const { sign } = require("../helper.js");
 
 const SignatureValidator = artifacts.require("SignatureValidator");
 
@@ -9,28 +10,38 @@ contract("SignatureValidator", (accounts) => {
     beforeEach(async () => {
         const web3Provider = new providers.Web3Provider(web3.currentProvider);
         this.recipient = web3Provider.getSigner(accounts[0]);
-        this.keeper1 = web3Provider.getSigner(accounts[1]);
-        this.keeper2 = web3Provider.getSigner(accounts[2]);
+        this.keepers = [
+            "0xadB55751AE2d025822A35CA4338853edC920Afaa",
+            "0xd0F5AcAa0FDC4E9F9984D72757CF506Cf482D0fA",
+        ];
+        this.keeperPrivates = [
+            "33b878c049feb985af2ff139843a74c87ad1a815dcaaac34c161c1b3473d52a1",
+            "54cf6ecdcebdb5bb1ef61c1d87fcd01b75a2a73f8ce7aa64273b50019d1cde84",
+        ];
         this.validator = await SignatureValidator.new();
     });
 
     it("reverted with invalid signature", async () => {
         const amount = BigNumber.from(10);
-        const keepers = [this.keeper1, this.keeper2];
-        const keeperAddrs = [this.keeper1._address, this.keeper2._address];
         const nonces = [BigNumber.from(42), BigNumber.from(130)];
         const rList = [];
         const sList = [];
         let vShift = 0;
         let packedV = BigNumber.from(0);
 
-        for (let i = 0; i < keepers.length; i++) {
-            let payload = ethers.utils.defaultAbiCoder.encode(
-                ["address", "uint256", "uint256"],
-                [this.recipient._address, nonces[i], amount]
+        for (let i = 0; i < this.keepers.length; i++) {
+            let signature = await sign(
+                this.keeperPrivates[i],
+                this.validator.address,
+                this.recipient._address,
+                nonces[i],
+                amount
             );
-            payload = ethers.utils.keccak256(payload);
-            const signature = await keepers[0].signMessage(ethers.utils.arrayify(payload));
+
+            if (i == 1) {
+                signature =
+                    "0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c";
+            }
             const sig = ethers.utils.splitSignature(signature);
 
             rList.push(sig.r);
@@ -44,7 +55,7 @@ contract("SignatureValidator", (accounts) => {
             this.validator.batchValidate(
                 this.recipient._address,
                 amount,
-                keeperAddrs,
+                this.keepers,
                 nonces,
                 rList,
                 sList,
@@ -56,21 +67,20 @@ contract("SignatureValidator", (accounts) => {
 
     it("batch validate and update last nonces", async () => {
         const amount = BigNumber.from(10);
-        const keepers = [this.keeper1, this.keeper2];
-        const keeperAddrs = [this.keeper1._address, this.keeper2._address];
         const nonces = [BigNumber.from(42), BigNumber.from(130)];
         const rList = [];
         const sList = [];
         let vShift = 0;
         let packedV = BigNumber.from(0);
 
-        for (let i = 0; i < keepers.length; i++) {
-            let payload = ethers.utils.defaultAbiCoder.encode(
-                ["address", "uint256", "uint256"],
-                [this.recipient._address, nonces[i], amount]
+        for (let i = 0; i < this.keepers.length; i++) {
+            const signature = await sign(
+                this.keeperPrivates[i],
+                this.validator.address,
+                this.recipient._address,
+                nonces[i],
+                amount
             );
-            payload = ethers.utils.keccak256(payload);
-            const signature = await keepers[i].signMessage(ethers.utils.arrayify(payload));
             const sig = ethers.utils.splitSignature(signature);
 
             rList.push(sig.r);
@@ -83,15 +93,15 @@ contract("SignatureValidator", (accounts) => {
         await this.validator.batchValidate(
             this.recipient._address,
             amount,
-            keeperAddrs,
+            this.keepers,
             nonces,
             rList,
             sList,
             packedV
         );
 
-        for (let i = 0; i < keepers.length; i++) {
-            expect(await this.validator.lastNonces(keeperAddrs[i])).to.be.bignumber.equal(
+        for (let i = 0; i < this.keepers.length; i++) {
+            expect(await this.validator.lastNonces(this.keepers[i])).to.be.bignumber.equal(
                 new BN(nonces[i].toString())
             );
         }
@@ -99,21 +109,20 @@ contract("SignatureValidator", (accounts) => {
 
     it("reverted with nonce outdated", async () => {
         const amount = BigNumber.from(10);
-        const keepers = [this.keeper1, this.keeper2];
-        const keeperAddrs = [this.keeper1._address, this.keeper2._address];
         const nonces = [BigNumber.from(42), BigNumber.from(130)];
         const rList = [];
         const sList = [];
         let vShift = 0;
         let packedV = BigNumber.from(0);
 
-        for (let i = 0; i < keepers.length; i++) {
-            let payload = ethers.utils.defaultAbiCoder.encode(
-                ["address", "uint256", "uint256"],
-                [this.recipient._address, nonces[i], amount]
+        for (let i = 0; i < this.keepers.length; i++) {
+            const signature = await sign(
+                this.keeperPrivates[i],
+                this.validator.address,
+                this.recipient._address,
+                nonces[i],
+                amount
             );
-            payload = ethers.utils.keccak256(payload);
-            const signature = await keepers[i].signMessage(ethers.utils.arrayify(payload));
             const sig = ethers.utils.splitSignature(signature);
 
             rList.push(sig.r);
@@ -126,7 +135,7 @@ contract("SignatureValidator", (accounts) => {
         await this.validator.batchValidate(
             this.recipient._address,
             amount,
-            keeperAddrs,
+            this.keepers,
             nonces,
             rList,
             sList,
@@ -137,7 +146,7 @@ contract("SignatureValidator", (accounts) => {
             this.validator.batchValidate(
                 this.recipient._address,
                 amount,
-                keeperAddrs,
+                this.keepers,
                 nonces,
                 rList,
                 sList,

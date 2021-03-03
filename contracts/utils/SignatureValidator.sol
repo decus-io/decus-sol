@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.0;
 
-contract SignatureValidator {
+import "./LibRequest.sol";
+
+contract SignatureValidator is LibRequest {
     mapping(address => uint256) public lastNonces;
 
     function recoverSigner(
@@ -26,15 +28,7 @@ contract SignatureValidator {
             require(lastNonces[keepers[i]] < nonces[i], "nonce outdated");
             require(
                 recoverSigner(
-                    keccak256(
-                        abi.encodePacked(
-                            "\x19Ethereum Signed Message:\n32",
-                            keccak256(
-                                // rebuild the message signed by the keeper
-                                abi.encode(recipient, nonces[i], amount)
-                            )
-                        )
-                    ),
+                    getMintRequestHash(recipient, nonces[i], amount),
                     uint8(packedV), // the lowest byte of packedV
                     r[i],
                     s[i]

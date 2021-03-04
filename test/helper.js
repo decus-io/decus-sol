@@ -49,6 +49,51 @@ async function advanceTimeAndBlock(targetTime) {
     console.log("latest timestamp", (await web3.eth.getBlock("latest")).timestamp);
 }
 
+const sigUtil = require("eth-sig-util");
+function sign(privateKey, verifyingContract, recipient, nonce, amount) {
+    const domainType = [
+        { name: "name", type: "string" },
+        { name: "version", type: "string" },
+        { name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" },
+    ];
+
+    const mintRequestTypes = [
+        { name: "recipient", type: "address" },
+        { name: "nonce", type: "uint256" },
+        { name: "amount", type: "uint256" },
+    ];
+
+    const domain = {
+        name: "DeCus",
+        version: "1.0",
+        chainId: 1,
+        verifyingContract: verifyingContract,
+    };
+
+    // The data to sign
+    const message = {
+        recipient: recipient,
+        nonce: nonce.toString(),
+        amount: amount.toString(),
+    };
+
+    const typedData = {
+        types: {
+            EIP712Domain: domainType,
+            MintRequest: mintRequestTypes,
+        },
+        primaryType: "MintRequest",
+        domain: domain,
+        message: message,
+    };
+
+    return sigUtil.signTypedData_v4(Buffer.from(privateKey, "hex"), { data: typedData });
+
+    // return signer._signTypedData(domain, types, value);
+}
+
 module.exports = {
     advanceTimeAndBlock,
+    sign,
 };

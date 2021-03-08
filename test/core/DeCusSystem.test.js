@@ -16,7 +16,7 @@ const DeCusSystem = artifacts.require("DeCusSystem");
 
 /* eslint-disable no-unused-expressions */
 contract("DeCusSystem", (accounts) => {
-    const [owner, keeper1, keeper2, user1, user2] = accounts;
+    const [owner, keeper1, keeper2, keeper3, user1, user2] = accounts;
 
     // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -31,10 +31,15 @@ contract("DeCusSystem", (accounts) => {
     const keeperWbtcAmount = new BN(600);
     const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
 
-    const group1Id = new BN(1);
-    const receipt1Id = new BN(1);
+    const group0Id = new BN(1);
+    const group0BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf0";
+    const group0BtcSatoshiAmount = new BN(200000);
+
+    const group1Id = new BN(2);
     const group1BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
     const group1BtcSatoshiAmount = new BN(200000);
+
+    const receipt1Id = new BN(1);
 
     beforeEach(async () => {
         // prepare system
@@ -70,6 +75,9 @@ contract("DeCusSystem", (accounts) => {
         await this.hbtc.mint(keeper2, hbtcHolding);
         await this.wbtc.mint(keeper2, wbtcHolding);
 
+        await this.hbtc.mint(keeper3, hbtcHolding);
+        await this.wbtc.mint(keeper3, wbtcHolding);
+
         await this.hbtc.approve(this.keeper_registry.address, keeperHbtcAmount, {
             from: keeper1,
         });
@@ -85,7 +93,24 @@ contract("DeCusSystem", (accounts) => {
             from: keeper2,
         });
         this.keeper2Id = await this.keeper_registry.getId(keeper2);
+
+        await this.wbtc.approve(this.keeper_registry.address, keeperWbtcAmount, {
+            from: keeper3,
+        });
+        await this.keeper_registry.addKeeper(keeper3, [this.wbtc.address], [keeperWbtcAmount], {
+            from: keeper3,
+        });
+        this.keeper3Id = await this.keeper_registry.getId(keeper3);
+
+        this.group0Keepers = [this.keeper2Id, this.keeper3Id];
         this.group1Keepers = [this.keeper1Id, this.keeper2Id];
+
+        await this.decus_system.addGroup(
+            this.group0Keepers,
+            group0BtcAddress,
+            group0BtcSatoshiAmount,
+            { from: owner }
+        );
 
         await this.decus_system.addGroup(
             this.group1Keepers,
@@ -109,6 +134,9 @@ contract("DeCusSystem", (accounts) => {
     });
 
     it("group id", async () => {
+        expect(await this.group_registry.getGroupId(group0BtcAddress)).to.be.bignumber.equal(
+            group0Id
+        );
         expect(await this.group_registry.getGroupId(group1BtcAddress)).to.be.bignumber.equal(
             group1Id
         );
@@ -116,48 +144,52 @@ contract("DeCusSystem", (accounts) => {
 
     describe("overall state transition", () => {
         it("round", async () => {
-            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 });
-            const receiptId = await this.decus_system
-                .expect(await this.receipts.getReceiptStatus(group1Id))
-                .to.be.bignumber.equal(new BN(1));
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
+            expect(await this.receipts.getWorkingReceiptId(group1Id)).to.be.bignumber.equal(receipt1Id);
+            expect(await this.receipts.getReceiptStatus(receipt1Id)).to.be.bignumber.equal(new BN(1));
 
             await expectRevert(
-                this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 }),
+                this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 }),
                 "previous request has not completed yet"
             );
 
             advanceTimeAndBlock(0);
             advanceTimeAndBlock(0);
-            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
+            await expectRevert(
+                this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 }),
+                "revert group is occupied with pending receipt"
+            );
+            expect(await this.receipts.getReceiptStatus(receipt1Id)).to.be.bignumber.equal(new BN(1));
 
             await expectRevert(
-                this.decus_system.cancelMintRequest(group1Id, {
+                this.decus_system.cancelMintRequest(receipt1Id, {
                     from: user2,
                 }),
                 "only applicant"
             );
 
-            await this.decus_system.cancelMintRequest(group1Id, {
+            await this.decus_system.cancelMintRequest(receipt1Id, {
                 from: user1,
             });
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(0));
+            expect(await this.receipts.getReceiptStatus(receipt1Id)).to.be.bignumber.equal(new BN(0));
 
-            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 });
+            const receipt2Id = await this.receipts.getWorkingReceiptId(group1Id);
+            expect(receipt2Id).to.be.bignumber.equal(new BN(2));
+            expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(new BN(1));
 
             // TODO: add correct proof
-            await this.decus_system.verifyMint(group1Id, "proofplaceholder", { from: user1 });
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(2));
+            await this.decus_system.verifyMint(group1Id, "proofplaceholder", { from: user2 });
+            expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(new BN(2));
 
             const amount = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)));
-            await this.ebtc.approve(this.decus_system.address, amount, { from: user1 });
+            await this.ebtc.approve(this.decus_system.address, amount, { from: user2 });
 
-            await this.decus_system.burnRequest(group1Id, { from: user1 });
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(3));
+            await this.decus_system.burnRequest(receipt2Id, { from: user2 });
+            expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(new BN(3));
 
-            await this.decus_system.verifyBurn(group1Id, "proofplaceholder", { from: user1 });
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(0));
+            await this.decus_system.verifyBurn(receipt2Id, "proofplaceholder", { from: user2 });
+            expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(new BN(0));
         });
     });
 
@@ -167,7 +199,7 @@ contract("DeCusSystem", (accounts) => {
         });
 
         it("check", async () => {
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
+            expect(await this.receipts.getReceiptStatus(receipt1Id)).to.be.bignumber.equal(new BN(1));
         });
     });
 });

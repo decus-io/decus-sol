@@ -70,7 +70,7 @@ contract DeCusSystem is AccessControl, Pausable {
         );
 
         uint256 _receiptId =
-        receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
+            receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
 
         groups.requestReceived(_groupId, block.timestamp);
 

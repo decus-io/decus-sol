@@ -23,33 +23,33 @@ library ReceiptLib {
     }
 
     function getUserAddress(ReceiptMap storage _map, uint256 receiptId)
-    internal
-    view
-    returns (address)
+        internal
+        view
+        returns (address)
     {
         return _map.receipts[receiptId].user;
     }
 
     function getAmountInSatoshi(ReceiptMap storage _map, uint256 receiptId)
-    internal
-    view
-    returns (uint256)
+        internal
+        view
+        returns (uint256)
     {
         return _map.receipts[receiptId].amountInSatoshi;
     }
 
     function getReceiptStatus(ReceiptMap storage _map, uint256 receiptId)
-    internal
-    view
-    returns (uint256)
+        internal
+        view
+        returns (uint256)
     {
         return uint256(_map.receipts[receiptId].status);
     }
 
     function getGroupId(ReceiptMap storage _map, uint256 receiptId)
-    internal
-    view
-    returns (uint256)
+        internal
+        view
+        returns (uint256)
     {
         return _map.receipts[receiptId].groupId;
     }

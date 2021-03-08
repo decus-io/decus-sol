@@ -32,6 +32,7 @@ contract("DeCusSystem", (accounts) => {
     const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
 
     const group1Id = new BN(1);
+    const receipt1Id = new BN(1);
     const group1BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
     const group1BtcSatoshiAmount = new BN(200000);
 
@@ -116,7 +117,9 @@ contract("DeCusSystem", (accounts) => {
     describe("overall state transition", () => {
         it("round", async () => {
             await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 });
-            expect(await this.receipts.getReceiptStatus(group1Id)).to.be.bignumber.equal(new BN(1));
+            const receiptId = await this.decus_system
+                .expect(await this.receipts.getReceiptStatus(group1Id))
+                .to.be.bignumber.equal(new BN(1));
 
             await expectRevert(
                 this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 }),

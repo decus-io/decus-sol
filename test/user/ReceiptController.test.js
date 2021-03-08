@@ -10,6 +10,7 @@ contract("ReceiptController", (accounts) => {
     const RECEIPT_FACTORY_ADMIN_ROLE = web3.utils.soliditySha3("RECEIPT_FACTORY_ADMIN_ROLE");
 
     beforeEach(async () => {
+        this.receiptId = new BN(1);
         this.groupId = new BN(3333);
 
         this.amount = new BN(100000);
@@ -26,8 +27,10 @@ contract("ReceiptController", (accounts) => {
     it("request deposit", async () => {
         await this.controller.depositRequest(user1, this.groupId, this.amount, { from: owner });
 
-        expect(await this.controller.getReceiptStatus(this.groupId)).to.be.bignumber.equal(
-            new BN(1)
+        const receiptId = await this.controller.getWorkingReceiptId(this.groupId);
+
+        expect(await this.controller.getReceiptStatus(receiptId)).to.be.bignumber.equal(
+            this.receiptId
         );
     });
 
@@ -44,32 +47,32 @@ contract("ReceiptController", (accounts) => {
         });
 
         it("deposit received", async () => {
-            await this.controller.depositReceived(this.groupId, { from: owner });
+            await this.controller.depositReceived(this.receiptId, { from: owner });
 
-            expect(await this.controller.getReceiptStatus(this.groupId)).to.be.bignumber.equal(
+            expect(await this.controller.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(
                 new BN(2)
             );
 
-            await this.controller.withdrawRequest(this.groupId, { from: owner });
+            await this.controller.withdrawRequest(this.receiptId, { from: owner });
 
-            expect(await this.controller.getReceiptStatus(this.groupId)).to.be.bignumber.equal(
+            expect(await this.controller.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(
                 new BN(3)
             );
 
-            await this.controller.withdrawCompleted(this.groupId, { from: owner });
+            await this.controller.withdrawCompleted(this.receiptId, { from: owner });
 
-            expect(await this.controller.getReceiptStatus(this.groupId)).to.be.bignumber.equal(
+            expect(await this.controller.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(
                 new BN(0)
             );
         });
 
         it("withdraw requested", async () => {
-            await this.controller.depositReceived(this.groupId, { from: owner });
+            await this.controller.depositReceived(this.receiptId, { from: owner });
 
-            await this.controller.withdrawRequest(this.groupId, { from: owner });
+            await this.controller.withdrawRequest(this.receiptId, { from: owner });
 
             await expectRevert(
-                this.controller.depositReceived(this.groupId),
+                this.controller.depositReceived(this.receiptId),
                 "receipt is not in DepositRequested state"
             );
         });

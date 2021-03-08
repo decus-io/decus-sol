@@ -9,6 +9,7 @@ contract("ReceiptLib", (accounts) => {
     const [owner, user1, user2] = accounts;
 
     beforeEach(async () => {
+        this.receiptId = new BN(1111);
         this.groupId = new BN(3333);
 
         this.amount = new BN(100000);
@@ -17,41 +18,51 @@ contract("ReceiptLib", (accounts) => {
     });
 
     it("request deposit", async () => {
-        await this.lib.depositRequest(user1, this.groupId, this.amount);
+        await this.lib.depositRequest(this.receiptId, user1, this.groupId, this.amount);
 
-        expect(await this.lib.getUserAddress(this.groupId)).to.equal(user1);
+        expect(await this.lib.getUserAddress(this.receiptId)).to.equal(user1);
 
-        expect(await this.lib.getAmountInSatoshi(this.groupId)).to.be.bignumber.equal(this.amount);
+        expect(await this.lib.getGroupId(this.receiptId)).to.be.bignumber.equal(this.groupId);
 
-        expect(await this.lib.getReceiptStatus(this.groupId)).to.be.bignumber.equal(new BN(1));
+        expect(await this.lib.getAmountInSatoshi(this.receiptId)).to.be.bignumber.equal(
+            this.amount
+        );
+
+        expect(await this.lib.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(new BN(1));
     });
 
     describe("state", () => {
         beforeEach(async () => {
-            await this.lib.depositRequest(user1, this.groupId, this.amount);
+            await this.lib.depositRequest(this.receiptId, user1, this.groupId, this.amount);
         });
 
         it("deposit received", async () => {
-            await this.lib.depositReceived(this.groupId);
+            await this.lib.depositReceived(this.receiptId);
 
-            expect(await this.lib.getReceiptStatus(this.groupId)).to.be.bignumber.equal(new BN(2));
+            expect(await this.lib.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(
+                new BN(2)
+            );
 
-            await this.lib.withdrawRequest(this.groupId);
+            await this.lib.withdrawRequest(this.receiptId);
 
-            expect(await this.lib.getReceiptStatus(this.groupId)).to.be.bignumber.equal(new BN(3));
+            expect(await this.lib.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(
+                new BN(3)
+            );
 
-            await this.lib.withdrawCompleted(this.groupId);
+            await this.lib.withdrawCompleted(this.receiptId);
 
-            expect(await this.lib.getReceiptStatus(this.groupId)).to.be.bignumber.equal(new BN(0));
+            expect(await this.lib.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(
+                new BN(0)
+            );
         });
 
         it("withdraw requested", async () => {
-            await this.lib.depositReceived(this.groupId);
+            await this.lib.depositReceived(this.receiptId);
 
-            await this.lib.withdrawRequest(this.groupId);
+            await this.lib.withdrawRequest(this.receiptId);
 
             await expectRevert(
-                this.lib.depositReceived(this.groupId),
+                this.lib.depositReceived(this.receiptId),
                 "receipt is not in DepositRequested state"
             );
         });

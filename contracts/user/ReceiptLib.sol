@@ -11,6 +11,7 @@ library ReceiptLib {
     }
 
     struct Receipt {
+        uint256 id;
         address user;
         uint256 groupId;
         uint256 amountInSatoshi;
@@ -18,60 +19,76 @@ library ReceiptLib {
     }
 
     struct ReceiptMap {
-        mapping(uint256 => Receipt) receipts; // groupId to Receipt
+        mapping(uint256 => Receipt) receipts; // receiptId to Receipt
     }
 
-    function getUserAddress(ReceiptMap storage _map, uint256 groupId)
-        internal
-        view
-        returns (address)
+    function getUserAddress(ReceiptMap storage _map, uint256 receiptId)
+    internal
+    view
+    returns (address)
     {
-        return _map.receipts[groupId].user;
+        return _map.receipts[receiptId].user;
     }
 
-    function getAmountInSatoshi(ReceiptMap storage _map, uint256 groupId)
-        internal
-        view
-        returns (uint256)
+    function getAmountInSatoshi(ReceiptMap storage _map, uint256 receiptId)
+    internal
+    view
+    returns (uint256)
     {
-        return _map.receipts[groupId].amountInSatoshi;
+        return _map.receipts[receiptId].amountInSatoshi;
     }
 
-    function getReceiptStatus(ReceiptMap storage _map, uint256 groupId)
-        internal
-        view
-        returns (uint256)
+    function getReceiptStatus(ReceiptMap storage _map, uint256 receiptId)
+    internal
+    view
+    returns (uint256)
     {
-        return uint256(_map.receipts[groupId].status);
+        return uint256(_map.receipts[receiptId].status);
+    }
+
+    function getGroupId(ReceiptMap storage _map, uint256 receiptId)
+    internal
+    view
+    returns (uint256)
+    {
+        return _map.receipts[receiptId].groupId;
+    }
+
+    function isPending(ReceiptMap storage _map, uint256 receiptId) internal view returns (bool) {
+        Status status = _map.receipts[receiptId].status;
+        return (status == Status.DepositRequested) || (status == Status.WithdrawRequested);
     }
 
     function depositRequest(
         ReceiptMap storage _map,
+        uint256 _receiptId,
         address _user,
         uint256 _groupId,
         uint256 _amountInSatoshi
     ) internal {
-        Receipt storage receipt = _map.receipts[_groupId];
+        Receipt storage receipt = _map.receipts[_receiptId];
         require(receipt.status < Status.DepositReceived, "receipt is in use");
 
+        receipt.id = _receiptId;
         receipt.user = _user;
         receipt.groupId = _groupId;
         receipt.amountInSatoshi = _amountInSatoshi;
         receipt.status = Status.DepositRequested;
     }
 
-    function requestRevoked(ReceiptMap storage _map, uint256 _groupId) internal {
-        Receipt storage receipt = _map.receipts[_groupId];
+    function receiptRevoked(ReceiptMap storage _map, uint256 _receiptId) internal {
+        Receipt storage receipt = _map.receipts[_receiptId];
         require(receipt.status < Status.DepositReceived, "receipt is in use");
 
-        receipt.user = address(0);
-        receipt.groupId = _groupId;
-        receipt.amountInSatoshi = 0;
+        // TODO: confirm we do not need to revert all the state
         receipt.status = Status.Available;
+        // receipt.user = address(0);
+        // receipt.groupId = _groupId;
+        // receipt.amountInSatoshi = 0;
     }
 
-    function depositReceived(ReceiptMap storage _map, uint256 _groupId) internal {
-        Receipt storage receipt = _map.receipts[_groupId];
+    function depositReceived(ReceiptMap storage _map, uint256 _receiptId) internal {
+        Receipt storage receipt = _map.receipts[_receiptId];
 
         require(
             receipt.status == Status.DepositRequested,
@@ -81,8 +98,8 @@ library ReceiptLib {
         receipt.status = Status.DepositReceived;
     }
 
-    function withdrawRequest(ReceiptMap storage _map, uint256 _groupId) internal {
-        Receipt storage receipt = _map.receipts[_groupId];
+    function withdrawRequest(ReceiptMap storage _map, uint256 _receiptId) internal {
+        Receipt storage receipt = _map.receipts[_receiptId];
 
         require(
             receipt.status == Status.DepositReceived,
@@ -92,8 +109,8 @@ library ReceiptLib {
         receipt.status = Status.WithdrawRequested;
     }
 
-    function withdrawCompleted(ReceiptMap storage _map, uint256 _groupId) internal {
-        Receipt storage receipt = _map.receipts[_groupId];
+    function withdrawCompleted(ReceiptMap storage _map, uint256 _receiptId) internal {
+        Receipt storage receipt = _map.receipts[_receiptId];
 
         require(
             receipt.status == Status.WithdrawRequested,

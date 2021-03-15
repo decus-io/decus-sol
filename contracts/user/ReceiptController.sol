@@ -2,6 +2,7 @@
 pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 import {ReceiptLib} from "./ReceiptLib.sol";
@@ -9,8 +10,10 @@ import {ReceiptLib} from "./ReceiptLib.sol";
 contract ReceiptController is AccessControl {
     using ReceiptLib for ReceiptLib.ReceiptMap;
     using Counters for Counters.Counter;
+    using SafeMath for uint256;
 
     bytes32 public constant RECEIPT_FACTORY_ADMIN_ROLE = keccak256("RECEIPT_FACTORY_ADMIN_ROLE");
+    uint256 public constant MINT_REQUEST_GRACE_PERIOD = 8 hours;
 
     event DepositRequested(
         uint256 indexed receiptId,
@@ -19,7 +22,7 @@ contract ReceiptController is AccessControl {
         uint256 amount
     );
 
-    event DepositRevoked(uint256 indexed receiptId, address indexed user);
+    event DepositRevoked(uint256 indexed receiptId, address indexed revoker);
 
     event DepositReceived(uint256 indexed receiptId);
 
@@ -47,8 +50,26 @@ contract ReceiptController is AccessControl {
         return ReceiptLib.getGroupId(receipts, receiptId);
     }
 
+    function getCreateTimestamp(uint256 receiptId) external view returns (uint256) {
+        return ReceiptLib.getCreateTimestamp(receipts, receiptId);
+    }
+
+    function getCreateTimestamp2(uint256 receiptId) external view returns (uint256) {
+        return ReceiptLib.getCreateTimestamp(receipts, receiptId).add(MINT_REQUEST_GRACE_PERIOD);
+    }
+
     function getWorkingReceiptId(uint256 groupId) external view returns (uint256) {
         return group2receipt[groupId];
+    }
+
+    function isGroupAvailable(uint256 groupId) external view returns (bool) {
+        return !_isPending(group2receipt[groupId]);
+    }
+
+    function isStale(uint256 receiptId) external view returns (bool) {
+        return
+            ReceiptLib.getCreateTimestamp(receipts, receiptId).add(MINT_REQUEST_GRACE_PERIOD) <
+            block.timestamp;
     }
 
     function _isPending(uint256 receiptId) internal view returns (bool) {
@@ -58,8 +79,8 @@ contract ReceiptController is AccessControl {
     constructor(address admin) public {
         _setupRole(RECEIPT_FACTORY_ADMIN_ROLE, admin);
 
+        // receipt id starts from 1
         _id_gen.increment();
-        // starts from 1
     }
 
     function depositRequest(
@@ -69,10 +90,9 @@ contract ReceiptController is AccessControl {
     ) external returns (uint256) {
         require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
 
-        uint256 _receiptId = group2receipt[_groupId];
-        require(!_isPending(_receiptId), "group is occupied with pending receipt");
+        require(!_isPending(group2receipt[_groupId]), "group is occupied with pending receipt");
 
-        _receiptId = _id_gen.current();
+        uint256 _receiptId = _id_gen.current();
         _id_gen.increment();
 
         // TODO: can we reused old receipt to reduce receipt creation?
@@ -86,15 +106,16 @@ contract ReceiptController is AccessControl {
     }
 
     function revokeRequest(uint256 _receiptId) external {
+        require(_receiptId != 0, "receipt id 0 is not allowed");
         require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
 
-        address _user = receipts.getUserAddress(_receiptId);
         ReceiptLib.receiptRevoked(receipts, _receiptId);
 
-        emit DepositRevoked(_receiptId, _user);
+        emit DepositRevoked(_receiptId, _msgSender());
     }
 
     function depositReceived(uint256 _receiptId) external {
+        require(_receiptId != 0, "receipt id 0 is not allowed");
         require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.depositReceived(receipts, _receiptId);
@@ -103,6 +124,7 @@ contract ReceiptController is AccessControl {
     }
 
     function withdrawRequest(uint256 _receiptId) external {
+        require(_receiptId != 0, "receipt id 0 is not allowed");
         require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.withdrawRequest(receipts, _receiptId);
@@ -111,6 +133,7 @@ contract ReceiptController is AccessControl {
     }
 
     function withdrawCompleted(uint256 _receiptId) external {
+        require(_receiptId != 0, "receipt id 0 is not allowed");
         require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.withdrawCompleted(receipts, _receiptId);

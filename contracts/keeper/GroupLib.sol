@@ -12,7 +12,7 @@ library GroupLib {
         uint256 id;
         string btcAddress;
         uint256[] keepers;
-        uint256 lastTimestamp;
+        uint256 lastWithdrawTimestamp;
     }
 
     function allowance(Group storage _group) internal view returns (uint256) {
@@ -55,14 +55,6 @@ library GroupLib {
         return _map.groups[_map.id2index[_id] - 1].allowance();
     }
 
-    function getGroupLastTimestamp(GroupMap storage _map, uint256 _id)
-        internal
-        view
-        returns (uint256)
-    {
-        return _map.groups[_map.id2index[_id] - 1].lastTimestamp;
-    }
-
     function addGroupSatoshi(
         GroupMap storage _map,
         uint256 _id,
@@ -96,19 +88,6 @@ library GroupLib {
         g.currSatoshi = 0;
     }
 
-    function setGroupLastTimestamp(
-        GroupMap storage _map,
-        uint256 _id,
-        uint256 _lastTimestamp
-    ) internal {
-        Group storage g = _map.groups[_map.id2index[_id] - 1];
-        g.lastTimestamp = _lastTimestamp;
-    }
-
-    function emptyGroupLastTimestamp(GroupMap storage _map, uint256 _id) internal {
-        _map.groups[_map.id2index[_id] - 1].lastTimestamp = 0;
-    }
-
     function addGroup(
         GroupMap storage _map,
         uint256 _id,
@@ -128,7 +107,7 @@ library GroupLib {
                 id: _id,
                 btcAddress: _btcAddress,
                 keepers: _keepers,
-                lastTimestamp: 0
+                lastWithdrawTimestamp: 0
             })
         );
 

@@ -31,7 +31,7 @@ async function deployToken(deployer, network, accounts) {
     await deployer.deploy(DeCus, accounts[0]);
 
     let wbtc, hbtc;
-    if (network === "development") {
+    if (network === "development" || network === "test") {
         const MockHBTC = artifacts.require("HBTC");
         const MockWBTC = artifacts.require("WBTC");
         await deployer.deploy(MockWBTC);

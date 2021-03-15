@@ -1,4 +1,5 @@
 const { BN, expectRevert } = require("@openzeppelin/test-helpers");
+const expectEvent = require("@openzeppelin/test-helpers/src/expectEvent");
 const { expect } = require("chai");
 const { advanceTimeAndBlock } = require("../helper");
 
@@ -16,7 +17,7 @@ const DeCusSystem = artifacts.require("DeCusSystem");
 
 /* eslint-disable no-unused-expressions */
 contract("DeCusSystem", (accounts) => {
-    const [owner, keeper1, keeper2, keeper3, user1, user2] = accounts;
+    const [owner, keeper1, keeper2, keeper3, user1, user2, user3] = accounts;
 
     // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -131,6 +132,8 @@ contract("DeCusSystem", (accounts) => {
 
         expect(await this.group_registry.hasRole(GROUP_ADMIN_ROLE, this.decus_system.address)).to.be
             .true;
+
+        expect(await this.group_registry.nGroups()).to.be.bignumber.equal(new BN(2));
     });
 
     it("group id", async () => {
@@ -154,11 +157,11 @@ contract("DeCusSystem", (accounts) => {
 
             await expectRevert(
                 this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 }),
-                "previous request has not completed yet"
+                "group is occupied with pending receipt"
             );
 
-            advanceTimeAndBlock(0);
-            advanceTimeAndBlock(0);
+            await advanceTimeAndBlock(0);
+            await advanceTimeAndBlock(0);
             await expectRevert(
                 this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 }),
                 "revert group is occupied with pending receipt"
@@ -211,12 +214,75 @@ contract("DeCusSystem", (accounts) => {
 
     describe("mint", () => {
         beforeEach(async () => {
-            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
+            await this.decus_system.mintRequest(group0Id, group0BtcSatoshiAmount, { from: user1 });
         });
 
         it("check", async () => {
+            expect(await this.receipts.getWorkingReceiptId(group0Id)).to.be.bignumber.equal(
+                receipt1Id
+            );
+
             expect(await this.receipts.getReceiptStatus(receipt1Id)).to.be.bignumber.equal(
                 new BN(1)
+            );
+
+            expect(await this.receipts.isGroupAvailable(group0Id)).to.be.false;
+        });
+
+        it("stale", async () => {
+            expect(await this.receipts.isStale(receipt1Id)).to.be.false;
+
+            await advanceTimeAndBlock(0);
+            await advanceTimeAndBlock(0);
+
+            expect(await this.receipts.isStale(receipt1Id)).to.be.true;
+        });
+
+        it("force mint", async () => {
+            await advanceTimeAndBlock(0);
+            await advanceTimeAndBlock(0);
+
+            await expectRevert(
+                this.decus_system.mintRequest(group0Id, group0BtcSatoshiAmount, {
+                    from: user3,
+                }),
+                "group is occupied with pending receipt"
+            );
+            expect(await this.receipts.getWorkingReceiptId(group0Id)).to.be.bignumber.equal(
+                receipt1Id
+            );
+            expect(await this.receipts.getReceiptStatus(receipt1Id)).to.be.bignumber.equal(
+                new BN(1)
+            );
+
+            expect(await this.receipts.isGroupAvailable(group0Id)).to.be.false;
+            expect(await this.receipts.isGroupAvailable(group1Id)).to.be.true;
+
+            await expectRevert(
+                this.decus_system.forceMintRequest(group0Id, group0BtcSatoshiAmount, {
+                    from: user3,
+                }),
+                "There are available groups to request"
+            );
+
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 });
+
+            expect(await this.receipts.isGroupAvailable(group0Id)).to.be.false;
+            expect(await this.receipts.isGroupAvailable(group1Id)).to.be.false;
+
+            const receiptId = new BN(3);
+            const rsp = await this.decus_system.forceMintRequest(group0Id, group0BtcSatoshiAmount, {
+                from: user3,
+            });
+            expectEvent(rsp, "MintRequest", {
+                groupId: group0Id,
+                receiptId: receiptId,
+                from: user3,
+                amountInSatoshi: group0BtcSatoshiAmount,
+            });
+
+            expect(await this.receipts.getWorkingReceiptId(group0Id)).to.be.bignumber.equal(
+                receiptId
             );
         });
     });

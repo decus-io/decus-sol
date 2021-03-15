@@ -13,7 +13,7 @@ const migration = async (deployer, network, accounts) => {
     keeperRegistry.setDependencies(KeeperNFT.address, AssetMeta.address);
     console.log("KeeperRegistry set dependencies: %s %s", KeeperNFT.address, AssetMeta.address);
 
-    if (network !== "development") {
+    if (network !== "development" && network !== "test") {
         const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
         await keeperRegistry.grantRole(KEEPER_ADMIN_ROLE, externalContracts.AUCTION[network]);
     }

@@ -24,7 +24,7 @@ contract DeCusSystem is AccessControl, Pausable {
     );
     event MintReceived(uint256 indexed groupId);
 
-    uint256 public constant MINT_REQUEST_GRACE_PERIOD = 8 hours;
+    uint256 public constant MINT_REQUEST_GRACE_PERIOD = 24 hours;
 
     EBTC ebtc;
     GroupRegistry groups;
@@ -56,23 +56,41 @@ contract DeCusSystem is AccessControl, Pausable {
         groups.addGroup(_keepers, _btcAddress, _maxSatoshi);
     }
 
-    function mintRequest(uint256 _groupId, uint256 _amountInSatoshi) public payable {
+    function noAvailableGroup() public view returns (bool) {
+        uint256 nGroup = groups.nGroups();
+        for (uint256 i = 1; i < nGroup + 1; i++) {
+            if (receiptController.isGroupAvailable(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function forceMintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {
+        // Use this function if we want to override a working group
+        // TODO: only if group is not in pending status, and there is no other available group to request
+        uint256 _receiptId = receiptController.getWorkingReceiptId(_groupId);
+        require(receiptController.isStale(_receiptId), "group is occupied within grace period");
+        require(noAvailableGroup(), "There are available groups to request");
+
+        receiptController.revokeRequest(_receiptId);
+
+        mintRequest(_groupId, _amountInSatoshi);
+    }
+
+    function mintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {
         // * check group has enough allowance
-        // * user needs to deposit eth, eth will be returned once the mint request is done
         // * generate receipt to fill all allowance
+        // TODO: [OPTIONAL] user needs to deposit eth, eth will be returned once the mint request is done
+        require(_amountInSatoshi > 0, "amount 0 is not allowed");
+        require(_groupId != 0, "group id 0 is not allowed");
         require(
             groups.getGroupAllowance(_groupId) == _amountInSatoshi,
             "receipt need to fill all allowance"
         );
-        require(
-            groups.getGroupLastTimestamp(_groupId).add(MINT_REQUEST_GRACE_PERIOD) < block.timestamp,
-            "previous request has not completed yet"
-        );
 
         uint256 _receiptId =
             receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
-
-        groups.requestReceived(_groupId, block.timestamp);
 
         emit MintRequest(_groupId, _receiptId, _msgSender(), _amountInSatoshi);
     }
@@ -85,17 +103,17 @@ contract DeCusSystem is AccessControl, Pausable {
         _mintToUser(_receiptId);
     }
 
-    function revokeMintRequest(uint256 _receiptId, uint256 _keeperID) public {
-        // Originated from keepers, to revoke an unfinished request
-        uint256 _groupId = receiptController.getGroupId(_receiptId);
-
-        require(groups.isGroupKeeper(_groupId, _keeperID), "only keeper within the group");
-
-        _revoke(_groupId, _receiptId);
-
-        // TODO: emit event
-        // User get ETH refunded
-    }
+    //    function revokeMintRequest(uint256 _receiptId, uint256 _keeperID) public {
+    //        // Originated from keepers, to revoke an unfinished request
+    //        uint256 _groupId = receiptController.getGroupId(_receiptId);
+    //
+    //        require(groups.isGroupKeeper(_groupId, _keeperID), "only keeper within the group");
+    //
+    //        _revoke(_groupId, _receiptId);
+    //
+    //        // TODO: emit event
+    //        // User get ETH refunded
+    //    }
 
     function cancelMintRequest(uint256 _receiptId) public {
         // Originated from users, before verifyMint to cancel the btc deposit
@@ -127,7 +145,7 @@ contract DeCusSystem is AccessControl, Pausable {
     }
 
     function _revoke(uint256 _groupId, uint256 _receiptId) internal {
-        groups.emptyGroupLastTimestamp(_groupId);
+        require(_groupId != 0, "group id 0 is not allowed");
 
         receiptController.revokeRequest(_receiptId);
     }

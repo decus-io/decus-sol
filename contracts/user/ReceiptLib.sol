@@ -15,6 +15,7 @@ library ReceiptLib {
         address user;
         uint256 groupId;
         uint256 amountInSatoshi;
+        uint256 createTimestamp;
         Status status;
     }
 
@@ -54,6 +55,14 @@ library ReceiptLib {
         return _map.receipts[receiptId].groupId;
     }
 
+    function getCreateTimestamp(ReceiptMap storage _map, uint256 receiptId)
+        internal
+        view
+        returns (uint256)
+    {
+        return _map.receipts[receiptId].createTimestamp;
+    }
+
     function isPending(ReceiptMap storage _map, uint256 receiptId) internal view returns (bool) {
         Status status = _map.receipts[receiptId].status;
         return (status == Status.DepositRequested) || (status == Status.WithdrawRequested);
@@ -74,6 +83,7 @@ library ReceiptLib {
         receipt.groupId = _groupId;
         receipt.amountInSatoshi = _amountInSatoshi;
         receipt.status = Status.DepositRequested;
+        receipt.createTimestamp = block.timestamp;
     }
 
     function receiptRevoked(ReceiptMap storage _map, uint256 _receiptId) internal {

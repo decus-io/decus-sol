@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
@@ -9,6 +10,7 @@ import {GroupLib} from "./GroupLib.sol";
 contract GroupRegistry is AccessControl {
     using GroupLib for GroupLib.GroupMap;
     using Counters for Counters.Counter;
+    using SafeMath for uint256;
 
     // events
     event GroupAdded(uint256 indexed id, uint256[] keepers, string btcAddress, uint256 maxSatoshi);
@@ -30,7 +32,11 @@ contract GroupRegistry is AccessControl {
 
         _setupRole(GROUP_ADMIN_ROLE, group_admin);
 
-        _id_gen.increment(); // id starts from 1
+        _id_gen.increment(); // group id starts from 1
+    }
+
+    function nGroups() external view returns (uint256) {
+        return groups.groups.length;
     }
 
     function exist(uint256 _id) external view returns (bool) {
@@ -43,10 +49,6 @@ contract GroupRegistry is AccessControl {
 
     function getGroupAllowance(uint256 _id) external view returns (uint256) {
         return groups.getGroupAllowance(_id);
-    }
-
-    function getGroupLastTimestamp(uint256 _id) external view returns (uint256) {
-        return groups.getGroupLastTimestamp(_id);
     }
 
     function getGroupId(string memory _btcAddress) external view returns (uint256) {
@@ -78,6 +80,7 @@ contract GroupRegistry is AccessControl {
 
     function deleteGroup(uint256 _id) external {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        require(_id != 0, "group id 0 is not allowed");
 
         // TODO: check group balance is 0
 
@@ -86,23 +89,17 @@ contract GroupRegistry is AccessControl {
         emit GroupDeleted(_id);
     }
 
-    function emptyGroupLastTimestamp(uint256 _id) external {
-        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
-        groups.emptyGroupLastTimestamp(_id);
-    }
-
-    function requestReceived(uint256 _id, uint256 _lastTimestamp) external {
-        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
-        groups.setGroupLastTimestamp(_id, _lastTimestamp);
-    }
-
     function depositReceived(uint256 _id, uint256 _amountInSatoshi) external {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        require(_id != 0, "group id 0 is not allowed");
+
         groups.addGroupSatoshi(_id, _amountInSatoshi);
     }
 
     function withdrawRequested(uint256 _id, uint256 _amountInSatoshi) external {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        require(_id != 0, "group id 0 is not allowed");
+
         groups.removeGroupSatoshi(_id, _amountInSatoshi);
     }
 }

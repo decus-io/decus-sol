@@ -1,14 +1,10 @@
 module.exports = {
-    HBTC: {
-        mainnet: "0x",
-        kovan: "0xffa6d011a20ff3a302da0c4ca5713e234e7309af",
-    },
     WBTC: {
         mainnet: "0x",
-        kovan: "0x13c39be3d5250bec24b29c3962379e0869893565",
+        kovan: "0x18Edd1E7B1e906B0223DceE6983bb664a9E0feFa",
     },
     AUCTION: {
         mainnet: "0x",
-        kovan: "0x044Bc5A48B8daBc2197eA33b5076572275E7aCCd",
+        kovan: "0x06E56c880c8a558225A9c74491069a16a8EcE261",
     },
 };

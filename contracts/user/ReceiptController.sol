@@ -54,10 +54,6 @@ contract ReceiptController is AccessControl {
         return ReceiptLib.getCreateTimestamp(receipts, receiptId);
     }
 
-    function getCreateTimestamp2(uint256 receiptId) external view returns (uint256) {
-        return ReceiptLib.getCreateTimestamp(receipts, receiptId).add(MINT_REQUEST_GRACE_PERIOD);
-    }
-
     function getWorkingReceiptId(uint256 groupId) external view returns (uint256) {
         return group2receipt[groupId];
     }

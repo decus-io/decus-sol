@@ -30,23 +30,18 @@ async function deployToken(deployer, network, accounts) {
     await deployer.deploy(EBTC, accounts[0], DeCusSystem.address);
     await deployer.deploy(DeCus, accounts[0]);
 
-    let wbtc, hbtc;
+    let wbtc;
     if (network === "development" || network === "test") {
-        const MockHBTC = artifacts.require("HBTC");
         const MockWBTC = artifacts.require("WBTC");
         await deployer.deploy(MockWBTC);
-        await deployer.deploy(MockHBTC);
-        hbtc = MockWBTC.address;
-        wbtc = MockHBTC.address;
+        wbtc = MockWBTC.address;
     } else {
         // mainnet or kovan
-        hbtc = externalContracts.HBTC[network];
         wbtc = externalContracts.WBTC[network];
     }
-    console.log(`HBTC address: ${hbtc}`);
     console.log(`WBTC address: ${wbtc}`);
 
-    await deployer.deploy(AssetMeta, [wbtc, hbtc]);
+    await deployer.deploy(AssetMeta, [wbtc]);
 
     // Libs
     await deployer.deploy(AssetLib);

@@ -11,32 +11,24 @@ const overrides = {
     value: ethers.utils.parseEther("0"),
 };
 
-const contract = new ethers.Contract(
-    "0x8902C95479Aa5c458E2E75010AD140a7C5046425",
-    abiJson.abi,
-    signer
-);
+const contract = new ethers.Contract(process.env.KEEPER_IMPORT_ADDRESS, abiJson.abi, signer);
 
 const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
 
-/* const assign = async () => {
-    const tx = await contract.grantRole(
-        KEEPER_ADMIN_ROLE,
-        "0x044Bc5A48B8daBc2197eA33b5076572275E7aCCd",
-        overrides
-    );
-    console.log(tx);
-}; */
+// const assign = async () => {
+//     const tx = await contract.grantRole(KEEPER_ADMIN_ROLE, process.env.AUCTION_ADDRESS, overrides);
+//     console.log(tx);
+// };
+
+// assign();
 
 const verify = async () => {
     const tx = await contract.hasRole(
         KEEPER_ADMIN_ROLE,
-        "0x044Bc5A48B8daBc2197eA33b5076572275E7aCCd",
-        overrides
+        process.env.AUCTION_ADDRESS
+        // overrides
     );
     console.log(tx);
 };
-
-// assign();
 
 verify();

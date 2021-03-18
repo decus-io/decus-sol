@@ -43,8 +43,12 @@ contract GroupRegistry is AccessControl {
         return groups.exist(_id);
     }
 
-    function isGroupKeeper(uint256 _id, uint256 _keeperID) external view returns (bool) {
-        return groups.isGroupKeeper(_id, _keeperID);
+    function isGroupKeeper(uint256 _id, uint256 _keeperId) external view returns (bool) {
+        return groups.isGroupKeeper(_id, _keeperId);
+    }
+
+    function getGroupKeepers(uint256 _id) external view returns (uint256[] memory) {
+        return groups.getGroupKeepers(_id);
     }
 
     function getGroupAllowance(uint256 _id) external view returns (uint256) {

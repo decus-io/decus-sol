@@ -39,16 +39,24 @@ library GroupLib {
     function isGroupKeeper(
         GroupMap storage _map,
         uint256 _id,
-        uint256 _keeperID
+        uint256 _keeperId
     ) internal view returns (bool) {
         uint256[] memory keepers = _map.groups[_map.id2index[_id] - 1].keepers;
         for (uint256 i = 0; i < keepers.length; i++) {
-            if (keepers[i] == _keeperID) {
+            if (keepers[i] == _keeperId) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    function getGroupKeepers(GroupMap storage _map, uint256 _id)
+        internal
+        view
+        returns (uint256[] memory)
+    {
+        return _map.groups[_map.id2index[_id] - 1].keepers;
     }
 
     function getGroupAllowance(GroupMap storage _map, uint256 _id) internal view returns (uint256) {

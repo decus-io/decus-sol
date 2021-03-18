@@ -17,6 +17,14 @@ contract GroupLibMock {
         return GroupLib.isGroupEmpty(_map, _id);
     }
 
+    function isGroupKeeper(uint256 _id, uint256 _keeperId) public view returns (bool) {
+        return GroupLib.isGroupKeeper(_map, _id, _keeperId);
+    }
+
+    function getGroupKeepers(uint256 _id) public view returns (uint256[] memory) {
+        return GroupLib.getGroupKeepers(_map, _id);
+    }
+
     function getGroupAllowance(uint256 _id) public view returns (uint256) {
         return GroupLib.getGroupAllowance(_map, _id);
     }

@@ -49,6 +49,14 @@ contract("GroupLib", (accounts) => {
             );
 
             expect(await this.lib.isGroupEmpty(this.groupId)).to.be.true;
+
+            expect(await this.lib.isGroupKeeper(this.groupId, this.keeper1)).to.be.true;
+            expect(await this.lib.isGroupKeeper(this.groupId, this.keeper2)).to.be.true;
+            expect(await this.lib.isGroupKeeper(this.groupId, this.keeper3)).to.be.false;
+
+            expect(JSON.stringify((await this.lib.getGroupKeepers(this.groupId)).sort())).to.equal(
+                JSON.stringify([this.keeper1, this.keeper2].sort())
+            );
         });
 
         it("add satoshi", async () => {

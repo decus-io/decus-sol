@@ -1,7 +1,8 @@
 const { BN, expectRevert } = require("@openzeppelin/test-helpers");
 const expectEvent = require("@openzeppelin/test-helpers/src/expectEvent");
 const { expect } = require("chai");
-const { advanceTimeAndBlock } = require("../helper");
+const { ethers, BigNumber } = require("ethers");
+const { advanceTimeAndBlock, sign } = require("../helper");
 
 const WBTC = artifacts.require("WBTC");
 const HBTC = artifacts.require("HBTC");
@@ -14,12 +15,12 @@ const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
 const DeCusSystem = artifacts.require("DeCusSystem");
+const SignatureValidator = artifacts.require("SignatureValidator");
 
 /* eslint-disable no-unused-expressions */
 contract("DeCusSystem", (accounts) => {
-    const [owner, keeper1, keeper2, keeper3, user1, user2, user3] = accounts;
+    const [owner, user1, user2, user3] = accounts;
 
-    // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
     // const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
     const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
@@ -30,7 +31,7 @@ contract("DeCusSystem", (accounts) => {
     const hbtcHolding = new BN(1000).mul(hbtcMultiplier);
 
     const keeperWbtcAmount = new BN(600);
-    const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
+    // const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
 
     const group0Id = new BN(1);
     const group0BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf0";
@@ -44,6 +45,17 @@ contract("DeCusSystem", (accounts) => {
 
     beforeEach(async () => {
         // prepare system
+        // accounts 7-9 from mnemonic "tuition produce fat desk suggest case essence wreck warfare convince razor bless"
+        this.keepers = [
+            "0x120D00a98e1AeA801cE2a619D688c222a54fE5BE",
+            "0xfA64E747AA37242a0F64fE15DCF541831463Eb5c",
+            "0xafA363A0d0509701c22734C37154529440a56d26",
+        ];
+        this.keeperPrivates = [
+            "1f7f39846c5a33769fe8ebe42ddcf3c04fac3178756e57ee5d98bddd06d9142f",
+            "886880467ec14111b6eede3b87443ce9de13236a8b0753e454a7dfef3bc07b82",
+            "8fb2800479b0a8faae75d1bfb2b94af292838ff65e064196d62804b1eb212f47",
+        ];
         this.hbtc = await HBTC.new();
         this.wbtc = await WBTC.new();
         this.other = await OtherCoin.new();
@@ -60,51 +72,36 @@ contract("DeCusSystem", (accounts) => {
         this.decus_system = await DeCusSystem.new(owner);
         this.ebtc = await EBTC.new(owner, this.decus_system.address);
 
+        this.validator = await SignatureValidator.new();
         this.group_registry = await GroupRegistry.new(owner, this.decus_system.address);
         this.receipts = await ReceiptController.new(this.decus_system.address);
         this.decus_system.setDependencies(
             this.ebtc.address,
             this.group_registry.address,
             this.receipts.address,
+            this.validator.address,
             { from: owner }
         );
 
         // prepare keeper
-        await this.hbtc.mint(keeper1, hbtcHolding);
-        await this.wbtc.mint(keeper1, wbtcHolding);
+        this.keeperIds = [];
+        for (let i = 0; i < this.keepers.length; i++) {
+            const keeper = this.keepers[i];
+            await this.hbtc.mint(keeper, hbtcHolding);
+            await this.wbtc.mint(keeper, wbtcHolding);
 
-        await this.hbtc.mint(keeper2, hbtcHolding);
-        await this.wbtc.mint(keeper2, wbtcHolding);
+            await this.wbtc.approve(this.keeper_registry.address, keeperWbtcAmount, {
+                from: keeper,
+            });
 
-        await this.hbtc.mint(keeper3, hbtcHolding);
-        await this.wbtc.mint(keeper3, wbtcHolding);
+            await this.keeper_registry.addKeeper(keeper, [this.wbtc.address], [keeperWbtcAmount], {
+                from: keeper,
+            });
+            this.keeperIds.push(await this.keeper_registry.getId(keeper));
+        }
 
-        await this.hbtc.approve(this.keeper_registry.address, keeperHbtcAmount, {
-            from: keeper1,
-        });
-        await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [keeperHbtcAmount], {
-            from: keeper1,
-        });
-        this.keeper1Id = await this.keeper_registry.getId(keeper1);
-
-        await this.wbtc.approve(this.keeper_registry.address, keeperWbtcAmount, {
-            from: keeper2,
-        });
-        await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [keeperWbtcAmount], {
-            from: keeper2,
-        });
-        this.keeper2Id = await this.keeper_registry.getId(keeper2);
-
-        await this.wbtc.approve(this.keeper_registry.address, keeperWbtcAmount, {
-            from: keeper3,
-        });
-        await this.keeper_registry.addKeeper(keeper3, [this.wbtc.address], [keeperWbtcAmount], {
-            from: keeper3,
-        });
-        this.keeper3Id = await this.keeper_registry.getId(keeper3);
-
-        this.group0Keepers = [this.keeper2Id, this.keeper3Id];
-        this.group1Keepers = [this.keeper1Id, this.keeper2Id];
+        this.group0Keepers = [this.keeperIds[1], this.keeperIds[2]];
+        this.group1Keepers = [this.keeperIds[0], this.keeperIds[1]];
 
         await this.decus_system.addGroup(
             this.group0Keepers,
@@ -190,9 +187,51 @@ contract("DeCusSystem", (accounts) => {
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(1)
             );
+            expect(await this.receipts.getUserAddress(receipt2Id)).to.equal(user2);
 
-            // TODO: add correct proof
-            await this.decus_system.verifyMint(group1Id, "proofplaceholder", { from: user2 });
+            const keepers = [this.keepers[0], this.keepers[1]];
+            const nonces = [BigNumber.from(12), BigNumber.from(23)];
+            const rList = [];
+            const sList = [];
+            let vShift = 0;
+            let packedV = BigNumber.from(0);
+            const recipient = user2;
+            const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+            const height = new BN("1940801");
+            for (let i = 0; i < keepers.length; i++) {
+                const signature = await sign(
+                    this.keeperPrivates[i],
+                    this.validator.address,
+                    recipient,
+                    nonces[i],
+                    group1BtcSatoshiAmount,
+                    txId,
+                    height
+                );
+
+                const sig = ethers.utils.splitSignature(signature);
+
+                rList.push(sig.r);
+                sList.push(sig.s);
+                packedV = packedV.or(BigNumber.from(sig.v).shl(vShift));
+
+                vShift += 8;
+            }
+
+            await this.decus_system.verifyMint(
+                receipt2Id,
+                group1BtcSatoshiAmount,
+                txId,
+                height,
+                keepers,
+                nonces,
+                rList,
+                sList,
+                packedV,
+                {
+                    from: recipient,
+                }
+            );
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(2)
             );

@@ -32,6 +32,43 @@ library GroupLib {
         return _map.id2index[_id] != 0;
     }
 
+    function nGroups(GroupMap storage _map) internal view returns (uint256) {
+        return _map.groups.length;
+    }
+
+    function getKeeperGroups(
+        GroupMap storage _map,
+        uint256 _keeperId,
+        uint256 _start
+    ) internal view returns (uint256) {
+        uint256 res;
+        for (uint256 i = _start; i < _map.groups.length; i++) {
+            if (i - _start >= 256) {
+                break;
+            }
+            uint256 _groupId = _map.groups[i].id;
+            if (isGroupKeeper(_map, _groupId, _keeperId)) {
+                res |= (1 << (i - _start));
+            }
+        }
+        return res;
+    }
+
+    function getGroupInfo(GroupMap storage _map, uint256 _id)
+        internal
+        view
+        returns (
+            uint256 maxSatoshi,
+            uint256 currSatoshi,
+            uint256 lastWithdrawTimestamp,
+            string memory btcAddress,
+            uint256[] memory keepers
+        )
+    {
+        Group storage g = _map.groups[_map.id2index[_id] - 1];
+        return (g.maxSatoshi, g.currSatoshi, g.lastWithdrawTimestamp, g.btcAddress, g.keepers);
+    }
+
     function isGroupEmpty(GroupMap storage _map, uint256 _id) internal view returns (bool) {
         return _map.groups[_map.id2index[_id] - 1].currSatoshi == 0;
     }

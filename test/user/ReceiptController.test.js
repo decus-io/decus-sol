@@ -16,6 +16,8 @@ contract("ReceiptController", (accounts) => {
         this.amount = new BN(100000);
 
         this.controller = await ReceiptController.new(owner);
+        this.txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+        this.height = new BN("1940801");
     });
 
     it("role", async () => {
@@ -32,6 +34,7 @@ contract("ReceiptController", (accounts) => {
         expect(await this.controller.getReceiptStatus(receiptId)).to.be.bignumber.equal(
             this.receiptId
         );
+        expect(await this.controller.getUserAddress(receiptId)).to.equal(user1);
     });
 
     it("request deposit fail", async () => {
@@ -47,7 +50,9 @@ contract("ReceiptController", (accounts) => {
         });
 
         it("deposit received", async () => {
-            await this.controller.depositReceived(this.receiptId, { from: owner });
+            await this.controller.depositReceived(this.receiptId, this.txId, this.height, {
+                from: owner,
+            });
 
             expect(await this.controller.getReceiptStatus(this.receiptId)).to.be.bignumber.equal(
                 new BN(2)
@@ -67,12 +72,14 @@ contract("ReceiptController", (accounts) => {
         });
 
         it("withdraw requested", async () => {
-            await this.controller.depositReceived(this.receiptId, { from: owner });
+            await this.controller.depositReceived(this.receiptId, this.txId, this.height, {
+                from: owner,
+            });
 
             await this.controller.withdrawRequest(this.receiptId, { from: owner });
 
             await expectRevert(
-                this.controller.depositReceived(this.receiptId),
+                this.controller.depositReceived(this.receiptId, this.txId, this.height),
                 "receipt is not in DepositRequested state"
             );
         });

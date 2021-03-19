@@ -19,6 +19,9 @@ contract("SignatureValidator", (accounts) => {
             "54cf6ecdcebdb5bb1ef61c1d87fcd01b75a2a73f8ce7aa64273b50019d1cde84",
         ];
         this.validator = await SignatureValidator.new();
+
+        this.txId = web3.utils.asciiToHex("");
+        this.height = BigNumber.from(0);
     });
 
     it("reverted with invalid signature", async () => {
@@ -35,7 +38,9 @@ contract("SignatureValidator", (accounts) => {
                 this.validator.address,
                 this.recipient._address,
                 nonces[i],
-                amount
+                amount,
+                this.txId,
+                this.height
             );
 
             if (i === 1) {
@@ -79,7 +84,9 @@ contract("SignatureValidator", (accounts) => {
                 this.validator.address,
                 this.recipient._address,
                 nonces[i],
-                amount
+                amount,
+                this.txId,
+                this.height
             );
             const sig = ethers.utils.splitSignature(signature);
 
@@ -121,7 +128,9 @@ contract("SignatureValidator", (accounts) => {
                 this.validator.address,
                 this.recipient._address,
                 nonces[i],
-                amount
+                amount,
+                this.txId,
+                this.height
             );
             const sig = ethers.utils.splitSignature(signature);
 

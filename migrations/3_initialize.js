@@ -4,6 +4,7 @@ const KeeperNFT = artifacts.require("KeeperNFT");
 const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
+const SignatureValidator = artifacts.require("SignatureValidator");
 const DeCusSystem = artifacts.require("DeCusSystem");
 
 const externalContracts = require("./external");
@@ -19,12 +20,18 @@ const migration = async (deployer, network, accounts) => {
     }
 
     const decusSystem = await DeCusSystem.deployed();
-    decusSystem.setDependencies(EBTC.address, GroupRegistry.address, ReceiptController.address);
+    decusSystem.setDependencies(
+        EBTC.address,
+        GroupRegistry.address,
+        ReceiptController.address,
+        SignatureValidator.address
+    );
     console.log(
         "DeCusSystem set dependencies: %s %s %s",
         EBTC.address,
         GroupRegistry.address,
-        ReceiptController.address
+        ReceiptController.address,
+        SignatureValidator.address
     );
 };
 

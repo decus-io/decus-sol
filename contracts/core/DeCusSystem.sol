@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import {EBTC} from "../tokens/EBTC.sol";
 import {DeCus} from "../tokens/DeCus.sol";
 import {BTCUtils} from "../utils/BTCUtils.sol";
+import {SignatureValidator} from "../utils/SignatureValidator.sol";
 
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
@@ -26,9 +27,10 @@ contract DeCusSystem is AccessControl, Pausable {
 
     uint256 public constant MINT_REQUEST_GRACE_PERIOD = 24 hours;
 
-    EBTC ebtc;
-    GroupRegistry groups;
-    ReceiptController receiptController;
+    EBTC public ebtc;
+    GroupRegistry public groups;
+    ReceiptController public receiptController;
+    SignatureValidator public signatureValidator;
 
     constructor(address _admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -37,13 +39,15 @@ contract DeCusSystem is AccessControl, Pausable {
     function setDependencies(
         EBTC _ebtc,
         GroupRegistry _groups,
-        ReceiptController _receipts
+        ReceiptController _receipts,
+        SignatureValidator _validator
     ) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
         groups = _groups;
         receiptController = _receipts;
+        signatureValidator = _validator;
     }
 
     function addGroup(
@@ -52,7 +56,7 @@ contract DeCusSystem is AccessControl, Pausable {
         uint256 _maxSatoshi
     ) public {
         // TODO: set group admin role
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require group admin role");
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
         groups.addGroup(_keepers, _btcAddress, _maxSatoshi);
     }
 
@@ -95,25 +99,36 @@ contract DeCusSystem is AccessControl, Pausable {
         emit MintRequest(_groupId, _receiptId, _msgSender(), _amountInSatoshi);
     }
 
-    function verifyMint(uint256 _receiptId, string memory _proofPlaceholder) public {
-        _verifyDeposit(_receiptId, _proofPlaceholder);
+    function verifyMint(
+        uint256 _receiptId,
+        uint256 amount,
+        bytes32 txId,
+        uint256 height,
+        address[] calldata keepers,
+        uint256[] calldata nonces,
+        bytes32[] calldata r,
+        bytes32[] calldata s,
+        uint256 packedV
+    ) public {
+        // any one can submit proof of deposit
+        _verifyDeposit(_receiptId, amount, txId, height, keepers, nonces, r, s, packedV);
 
-        _approveDeposit(_receiptId);
+        _approveDeposit(_receiptId, txId, height);
 
         _mintToUser(_receiptId);
     }
 
-    //    function revokeMintRequest(uint256 _receiptId, uint256 _keeperID) public {
-    //        // Originated from keepers, to revoke an unfinished request
-    //        uint256 _groupId = receiptController.getGroupId(_receiptId);
-    //
-    //        require(groups.isGroupKeeper(_groupId, _keeperID), "only keeper within the group");
-    //
-    //        _revoke(_groupId, _receiptId);
-    //
-    //        // TODO: emit event
-    //        // User get ETH refunded
-    //    }
+    // function revokeMintRequest(uint256 _receiptId, uint256 _keeperId) public {
+    //     // Originated from keepers, to revoke an unfinished request
+    //     uint256 _groupId = receiptController.getGroupId(_receiptId);
+
+    //     require(groups.isGroupKeeper(_groupId, _keeperId), "only keeper within the group");
+
+    //     _revoke(_groupId, _receiptId);
+
+    //     // TODO: emit event
+    //     // User get ETH refunded
+    // }
 
     function cancelMintRequest(uint256 _receiptId) public {
         // Originated from users, before verifyMint to cancel the btc deposit
@@ -125,12 +140,33 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: get ETH refunded
     }
 
-    function _verifyDeposit(uint256 _receiptId, string memory _proofPlaceholder) internal {
-        // TODO: BTC need to match full amount in group
+    function _verifyDeposit(
+        uint256 receiptId,
+        uint256 amount,
+        bytes32 txId,
+        uint256 height,
+        address[] calldata keepers,
+        uint256[] calldata nonces,
+        bytes32[] calldata r,
+        bytes32[] calldata s,
+        uint256 packedV
+    ) internal {
+        // TODO: decode amount, txId, height, from data
+        address recipient = receiptController.getUserAddress(receiptId);
+        // TODO: validate keepers belong to the group
+        // uint256 groupId = receiptController.getGroupId(_receiptId);
+        // for (uint256 i = 0; i < keepers; i++) {
+        //     require(groups.isGroupKeeper(groupId, ))
+        // }
+        signatureValidator.batchValidate(recipient, amount, keepers, nonces, r, s, packedV);
     }
 
-    function _approveDeposit(uint256 _receiptId) internal {
-        receiptController.depositReceived(_receiptId);
+    function _approveDeposit(
+        uint256 _receiptId,
+        bytes32 _txId,
+        uint256 _height
+    ) internal {
+        receiptController.depositReceived(_receiptId, _txId, _height);
 
         uint256 _groupId = receiptController.getGroupId(_receiptId);
 

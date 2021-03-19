@@ -42,8 +42,12 @@ contract ReceiptLibMock {
         _map.receiptRevoked(_receiptId);
     }
 
-    function depositReceived(uint256 _receiptId) public {
-        _map.depositReceived(_receiptId);
+    function depositReceived(
+        uint256 _receiptId,
+        bytes32 _txId,
+        uint256 _height
+    ) public {
+        _map.depositReceived(_receiptId, _txId, _height);
     }
 
     function withdrawRequest(uint256 _receiptId) public {

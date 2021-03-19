@@ -31,7 +31,7 @@ contract("GroupLib", (accounts) => {
         expect(await this.lib.exist(this.unknownGroupID)).to.be.false;
     });
 
-    describe("allowance", () => {
+    describe("one group", () => {
         beforeEach(async () => {
             await this.lib.addGroup(
                 this.groupId,
@@ -56,6 +56,12 @@ contract("GroupLib", (accounts) => {
 
             expect(JSON.stringify((await this.lib.getGroupKeepers(this.groupId)).sort())).to.equal(
                 JSON.stringify([this.keeper1, this.keeper2].sort())
+            );
+
+            expect(await this.lib.nGroups()).to.be.bignumber.equal(new BN(1));
+
+            expect(await this.lib.getKeeperGroups(this.keeper1, new BN(0))).to.be.bignumber.equal(
+                new BN(1)
             );
         });
 
@@ -134,6 +140,20 @@ contract("GroupLib", (accounts) => {
 
             expect(await this.lib.getGroupAllowance(this.groupId2)).to.be.bignumber.equal(
                 this.allowance
+            );
+
+            expect(await this.lib.nGroups()).to.be.bignumber.equal(new BN(2));
+
+            expect(await this.lib.getKeeperGroups(this.keeper2, new BN(0))).to.be.bignumber.equal(
+                new BN(3)
+            );
+
+            expect(await this.lib.getKeeperGroups(this.keeper3, new BN(0))).to.be.bignumber.equal(
+                new BN(2)
+            );
+
+            expect(await this.lib.getKeeperGroups(this.keeper2, new BN(1))).to.be.bignumber.equal(
+                new BN(1)
             );
         });
 

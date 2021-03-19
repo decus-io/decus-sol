@@ -3,13 +3,13 @@ const ethers = require("ethers");
 const abiJson = require("../build/contracts/KeeperRegistry.json");
 
 const provider = ethers.getDefaultProvider("kovan", process.env.INFURA_TEST_ID);
-const signer = new ethers.Wallet(process.env.PRIVATE_KEY_TEST || "", provider);
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY || "", provider);
 
-const overrides = {
-    gasLimit: 1000000,
-    gasPrice: "1000000000",
-    value: ethers.utils.parseEther("0"),
-};
+// const overrides = {
+//     gasLimit: 1000000,
+//     gasPrice: "1000000000",
+//     value: ethers.utils.parseEther("0"),
+// };
 
 const contract = new ethers.Contract(process.env.KEEPER_IMPORT_ADDRESS, abiJson.abi, signer);
 

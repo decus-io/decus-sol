@@ -110,11 +110,15 @@ contract ReceiptController is AccessControl {
         emit DepositRevoked(_receiptId, _msgSender());
     }
 
-    function depositReceived(uint256 _receiptId) external {
+    function depositReceived(
+        uint256 _receiptId,
+        bytes32 _txId,
+        uint256 _height
+    ) external {
         require(_receiptId != 0, "receipt id 0 is not allowed");
         require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
 
-        ReceiptLib.depositReceived(receipts, _receiptId);
+        ReceiptLib.depositReceived(receipts, _receiptId, _txId, _height);
 
         emit DepositReceived(_receiptId);
     }

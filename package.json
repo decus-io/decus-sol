@@ -32,7 +32,8 @@
         "check": "npm run lint && prettier --ignore-path .gitignore -c .",
         "fmt": "prettier --ignore-path .gitignore -w .",
         "lint": "eslint --ext .js --ignore-path .gitignore .",
-        "coverage": "truffle run coverage --file=\"test/core/DeCusSystem.test.js\" --solcoverjs ./.core.solcover.js"
+        "coverage": "truffle run coverage --file=\"test/core/DeCusSystem.test.js\" --solcoverjs ./.core.solcover.js",
+        "client": "ganache-cli -a 20 -m \"tuition produce fat desk suggest case essence wreck warfare convince razor bless\""
     },
     "keywords": [],
     "author": "decus",

@@ -9,6 +9,7 @@ const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
 const DeCusSystem = artifacts.require("DeCusSystem");
+const SignatureValidator = artifacts.require("SignatureValidator");
 
 const externalContracts = require("./external");
 
@@ -56,4 +57,7 @@ async function deployToken(deployer, network, accounts) {
     // group
     await deployer.deploy(GroupRegistry, accounts[0], DeCusSystem.address);
     await deployer.deploy(ReceiptController, DeCusSystem.address);
+
+    // validator
+    await deployer.deploy(SignatureValidator);
 }

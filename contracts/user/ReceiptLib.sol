@@ -17,6 +17,8 @@ library ReceiptLib {
         uint256 amountInSatoshi;
         uint256 createTimestamp;
         Status status;
+        bytes32 txId;
+        uint256 height;
     }
 
     struct ReceiptMap {
@@ -97,7 +99,12 @@ library ReceiptLib {
         // receipt.amountInSatoshi = 0;
     }
 
-    function depositReceived(ReceiptMap storage _map, uint256 _receiptId) internal {
+    function depositReceived(
+        ReceiptMap storage _map,
+        uint256 _receiptId,
+        bytes32 _txId,
+        uint256 _height
+    ) internal {
         Receipt storage receipt = _map.receipts[_receiptId];
 
         require(
@@ -106,6 +113,8 @@ library ReceiptLib {
         );
 
         receipt.status = Status.DepositReceived;
+        receipt.txId = _txId;
+        receipt.height = _height;
     }
 
     function withdrawRequest(ReceiptMap storage _map, uint256 _receiptId) internal {

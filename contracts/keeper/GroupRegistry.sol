@@ -36,7 +36,7 @@ contract GroupRegistry is AccessControl {
     }
 
     function nGroups() external view returns (uint256) {
-        return groups.groups.length;
+        return groups.nGroups();
     }
 
     function exist(uint256 _id) external view returns (bool) {
@@ -45,6 +45,24 @@ contract GroupRegistry is AccessControl {
 
     function isGroupKeeper(uint256 _id, uint256 _keeperId) external view returns (bool) {
         return groups.isGroupKeeper(_id, _keeperId);
+    }
+
+    function getGroupInfo(uint256 _id)
+        external
+        view
+        returns (
+            uint256 maxSatoshi,
+            uint256 currSatoshi,
+            uint256 lastWithdrawTimestamp,
+            string memory btcAddress,
+            uint256[] memory keepers
+        )
+    {
+        return groups.getGroupInfo(_id);
+    }
+
+    function getKeeperGroups(uint256 _keeperId, uint256 _start) external view returns (uint256) {
+        return groups.getKeeperGroups(_keeperId, _start);
     }
 
     function getGroupKeepers(uint256 _id) external view returns (uint256[] memory) {

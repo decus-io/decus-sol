@@ -63,6 +63,15 @@ contract("GroupLib", (accounts) => {
             expect(await this.lib.getKeeperGroups(this.keeper1, new BN(0))).to.be.bignumber.equal(
                 new BN(1)
             );
+
+            const info = await this.lib.getGroupInfo(this.groupId);
+            expect(info.maxSatoshi).to.be.bignumber.equal(this.allowance);
+            expect(info.currSatoshi).to.be.bignumber.equal(new BN(0));
+            expect(info.lastWithdrawTimestamp).to.be.bignumber.equal(new BN(0));
+            expect(JSON.stringify(info.keepers)).to.be.bignumber.equal(
+                JSON.stringify([this.keeper1, this.keeper2])
+            );
+            expect(info.btcAddress).to.be.bignumber.equal(this.btcAddress1);
         });
 
         it("add satoshi", async () => {

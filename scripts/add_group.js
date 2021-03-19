@@ -1,10 +1,10 @@
 const ethers = require("ethers");
 const systemAbi = require("../build/contracts/DeCusSystem.json");
 
-const provider = ethers.getDefaultProvider("kovan", process.env.INFURA_TEST_ID);
+const provider = ethers.getDefaultProvider("kovan", process.env.INFURA_PROJECT_ID);
 const signer = new ethers.Wallet(process.env.PRIVATE_KEY || "", provider);
 
-const SystemAddr = "0x94662fe0F7F040D52aC5b1aD73BF4d343A3ef9D8";
+const SystemAddr = process.env.DECUS_SYSTEM;
 const keepers = [1, 2, 3];
 const btcAddr = "2N2NDby9imzgSTHax1uacWUihdCfW35Ld5W";
 

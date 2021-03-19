@@ -1,7 +1,7 @@
 const { BN, expectRevert } = require("@openzeppelin/test-helpers");
 const expectEvent = require("@openzeppelin/test-helpers/src/expectEvent");
 const { expect } = require("chai");
-const { ethers, BigNumber } = require("ethers");
+const { ethers } = require("ethers");
 const { advanceTimeAndBlock, sign } = require("../helper");
 
 const WBTC = artifacts.require("WBTC");
@@ -190,11 +190,11 @@ contract("DeCusSystem", (accounts) => {
             expect(await this.receipts.getUserAddress(receipt2Id)).to.equal(user2);
 
             const keepers = [this.keepers[0], this.keepers[1]];
-            const nonces = [BigNumber.from(12), BigNumber.from(23)];
+            const nonces = [new BN(12), new BN(23)];
             const rList = [];
             const sList = [];
             let vShift = 0;
-            let packedV = BigNumber.from(0);
+            let packedV = new BN(0);
             const recipient = user2;
             const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
             const height = new BN("1940801");
@@ -213,7 +213,8 @@ contract("DeCusSystem", (accounts) => {
 
                 rList.push(sig.r);
                 sList.push(sig.s);
-                packedV = packedV.or(BigNumber.from(sig.v).shl(vShift));
+                // const v = new BN(sig.v);
+                packedV = packedV.or(new BN(sig.v).shln(vShift));
 
                 vShift += 8;
             }

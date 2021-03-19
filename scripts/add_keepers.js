@@ -10,7 +10,7 @@ console.log(network, WBTC);
 const provider = ethers.getDefaultProvider(network);
 const signer = new ethers.Wallet(process.env.PRIVATE_KEY || "", provider);
 
-const KeeperRegistryAddr = process.env.KEEPER_IMPORT_ADDRESS;
+const KeeperRegistryAddr = process.env.KEEPER_REGISTRY;
 
 const overrides = {
     // gasLimit: 1000000,

@@ -25,6 +25,20 @@ contract GroupLibMock {
         return GroupLib.nGroups(_map);
     }
 
+    function getGroupInfo(uint256 _id)
+        public
+        view
+        returns (
+            uint256 maxSatoshi,
+            uint256 currSatoshi,
+            uint256 lastWithdrawTimestamp,
+            string memory btcAddress,
+            uint256[] memory keepers
+        )
+    {
+        return GroupLib.getGroupInfo(_map, _id);
+    }
+
     function getKeeperGroups(uint256 _keeperId, uint256 _start) public view returns (uint256) {
         return GroupLib.getKeeperGroups(_map, _keeperId, _start);
     }

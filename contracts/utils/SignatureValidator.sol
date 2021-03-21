@@ -4,7 +4,7 @@ pragma solidity ^0.6.0;
 import "./LibRequest.sol";
 
 contract SignatureValidator is LibRequest {
-    mapping(address => uint256) public lastNonces;
+    mapping(uint256 => bool) public verified;
 
     function recoverSigner(
         bytes32 message,
@@ -16,28 +16,27 @@ contract SignatureValidator is LibRequest {
     }
 
     function batchValidate(
-        address recipient,
-        uint256 amount,
+        uint256 receiptId,
+        bytes32[] calldata data, // recipient, amount, txId, height
         address[] calldata keepers,
-        uint256[] calldata nonces,
         bytes32[] calldata r,
         bytes32[] calldata s,
         uint256 packedV
     ) external {
+        require(!verified[receiptId], "already verified");
         for (uint256 i = 0; i < keepers.length; i++) {
-            require(lastNonces[keepers[i]] < nonces[i], "nonce outdated");
             require(
                 recoverSigner(
-                    getMintRequestHash(recipient, nonces[i], amount),
+                    getMintRequestHash(data, receiptId),
                     uint8(packedV), // the lowest byte of packedV
                     r[i],
                     s[i]
                 ) == keepers[i],
                 "invalid signature"
             );
-            lastNonces[keepers[i]] = nonces[i];
 
             packedV >>= 8;
         }
+        verified[receiptId] = true;
     }
 }

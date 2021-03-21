@@ -6,7 +6,6 @@ const HBTC = artifacts.require("HBTC");
 const OtherCoin = artifacts.require("OtherCoin");
 
 const KeeperRegistry = artifacts.require("KeeperRegistry");
-const KeeperNFT = artifacts.require("KeeperNFT");
 const AssetMeta = artifacts.require("AssetMeta");
 const GroupRegistry = artifacts.require("GroupRegistry");
 
@@ -29,12 +28,7 @@ contract("GroupRegistry", (accounts) => {
         this.asset_meta = await AssetMeta.new([this.hbtc.address, this.wbtc.address]);
 
         this.keeper_registry = await KeeperRegistry.new(owner, decusSystem);
-        this.keeper_nft = await KeeperNFT.new(this.keeper_registry.address, { from: owner });
-        await this.keeper_registry.setDependencies(
-            this.keeper_nft.address,
-            this.asset_meta.address,
-            { from: owner }
-        );
+        await this.keeper_registry.setDependencies(this.asset_meta.address, { from: owner });
 
         await this.hbtc.mint(keeper1, hbtcHolding);
         await this.wbtc.mint(keeper1, wbtcHolding);
@@ -63,14 +57,12 @@ contract("GroupRegistry", (accounts) => {
             await this.keeper_registry.addKeeper(keeper1, [this.hbtc.address], [amount], {
                 from: keeper1,
             });
-            const keeper1Id = await this.keeper_registry.getId(keeper1);
 
             await this.wbtc.approve(this.keeper_registry.address, amount, { from: keeper2 });
             await this.keeper_registry.addKeeper(keeper2, [this.wbtc.address], [amount], {
                 from: keeper2,
             });
-            const keeper2Id = await this.keeper_registry.getId(keeper2);
-            this.keepers = [keeper1Id, keeper2Id];
+            this.keepers = [keeper1, keeper2];
         });
 
         it("add", async () => {

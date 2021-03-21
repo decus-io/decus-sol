@@ -29,7 +29,7 @@ jobs:
                   npm install
 
             - name: Run ganache
-              run: ganache-cli -a 200 &
+              run: ganache-cli -a 20 -m "tuition produce fat desk suggest case essence wreck warfare convince razor bless" &
 
             - name: Run tests
               run: truffle test

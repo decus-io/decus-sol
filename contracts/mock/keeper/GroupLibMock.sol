@@ -17,6 +17,36 @@ contract GroupLibMock {
         return GroupLib.isGroupEmpty(_map, _id);
     }
 
+    function isGroupKeeper(uint256 _id, address _keeper) public view returns (bool) {
+        return GroupLib.isGroupKeeper(_map, _id, _keeper);
+    }
+
+    function nGroups() public view returns (uint256) {
+        return GroupLib.nGroups(_map);
+    }
+
+    function getGroupInfo(uint256 _id)
+        public
+        view
+        returns (
+            uint256 maxSatoshi,
+            uint256 currSatoshi,
+            uint256 lastWithdrawTimestamp,
+            string memory btcAddress,
+            address[] memory keepers
+        )
+    {
+        return GroupLib.getGroupInfo(_map, _id);
+    }
+
+    function getKeeperGroups(address _keeper, uint256 _start) public view returns (uint256) {
+        return GroupLib.getKeeperGroups(_map, _keeper, _start);
+    }
+
+    function getGroupKeepers(uint256 _id) public view returns (address[] memory) {
+        return GroupLib.getGroupKeepers(_map, _id);
+    }
+
     function getGroupAllowance(uint256 _id) public view returns (uint256) {
         return GroupLib.getGroupAllowance(_map, _id);
     }
@@ -39,7 +69,7 @@ contract GroupLibMock {
 
     function addGroup(
         uint256 _id,
-        uint256[] calldata _keepers,
+        address[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) public {

@@ -8,22 +8,31 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import {EBTC} from "../tokens/EBTC.sol";
 import {DeCus} from "../tokens/DeCus.sol";
 import {BTCUtils} from "../utils/BTCUtils.sol";
+import {SignatureValidator} from "../utils/SignatureValidator.sol";
 
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
 import {ReceiptController} from "../user/ReceiptController.sol";
+import {KeeperRegistry} from "../keeper/KeeperRegistry.sol";
 
 contract DeCusSystem is AccessControl, Pausable {
     using SafeMath for uint256;
 
-    event MintRequest(uint256 indexed groupId, address indexed from, uint256 amountInSatoshi);
+    event MintRequest(
+        uint256 indexed groupId,
+        uint256 indexed receiptId,
+        address indexed from,
+        uint256 amountInSatoshi
+    );
     event MintReceived(uint256 indexed groupId);
 
-    uint256 public constant MINT_REQUEST_GRACE_PERIOD = 8 hours;
+    uint256 public constant MINT_REQUEST_GRACE_PERIOD = 24 hours;
 
-    EBTC ebtc;
-    GroupRegistry groups;
-    ReceiptController receiptController;
+    EBTC public ebtc;
+    GroupRegistry public groupRegistry;
+    KeeperRegistry public keeperRegistry;
+    ReceiptController public receiptController;
+    SignatureValidator public signatureValidator;
 
     constructor(address _admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -31,97 +40,178 @@ contract DeCusSystem is AccessControl, Pausable {
 
     function setDependencies(
         EBTC _ebtc,
-        GroupRegistry _groups,
-        ReceiptController _receipts
+        KeeperRegistry _keeperRegistry,
+        GroupRegistry _groupRegistry,
+        ReceiptController _receipts,
+        SignatureValidator _validator
     ) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
-        groups = _groups;
+        keeperRegistry = _keeperRegistry;
+        groupRegistry = _groupRegistry;
         receiptController = _receipts;
+        signatureValidator = _validator;
     }
 
     function addGroup(
-        uint256[] calldata _keepers,
+        address[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) public {
         // TODO: set group admin role
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require group admin role");
-        groups.addGroup(_keepers, _btcAddress, _maxSatoshi);
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
+        // TODO: check keeper has enough collateral
+        groupRegistry.addGroup(_keepers, _btcAddress, _maxSatoshi);
+    }
+
+    function noAvailableGroup() public view returns (bool) {
+        uint256 nGroup = groupRegistry.nGroups();
+        for (uint256 i = 1; i < nGroup + 1; i++) {
+            if (receiptController.isGroupAvailable(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function forceMintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {
+        // Use this function if we want to override a working group
+        // TODO: only if group is not in pending status, and there is no other available group to request
+        uint256 _receiptId = receiptController.getWorkingReceiptId(_groupId);
+        require(receiptController.isStale(_receiptId), "group is occupied within grace period");
+        require(noAvailableGroup(), "There are available groups in registry to request");
+
+        receiptController.revokeRequest(_receiptId);
+
+        mintRequest(_groupId, _amountInSatoshi);
     }
 
     function mintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {
-        // TODO: system find btc group to return
-        // 1. check group has enough space
-        // 2. generate receipt, including user address
+        // * check group has enough allowance
+        // * generate receipt to fill all allowance
+        // TODO: [OPTIONAL] user needs to deposit eth, eth will be returned once the mint request is done
+        require(_amountInSatoshi > 0, "amount 0 is not allowed");
+        require(_groupId != 0, "group id 0 is not allowed");
         require(
-            groups.getGroupAllowance(_groupId) == _amountInSatoshi,
+            groupRegistry.getGroupAllowance(_groupId) == _amountInSatoshi,
             "receipt need to fill all allowance"
         );
-        require(groups.isGroupEmpty(_groupId), "current version only support empty group");
-        require(
-            groups.getGroupLastTimestamp(_groupId).add(MINT_REQUEST_GRACE_PERIOD) < block.timestamp,
-            "previous request has not completed yet"
-        );
 
-        groups.requestReceived(_groupId, block.timestamp);
-        receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
+        uint256 _receiptId =
+            receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
 
-        emit MintRequest(_groupId, _msgSender(), _amountInSatoshi);
+        emit MintRequest(_groupId, _receiptId, _msgSender(), _amountInSatoshi);
     }
 
-    function verifyMint(uint256 _groupId, string memory _proofPlaceholder) public {
-        _verifyDeposit(_groupId, _proofPlaceholder);
+    function verifyMint(
+        uint256 receiptId,
+        bytes32[] calldata data, // recipient, amount, txId, height
+        address[] calldata keepers,
+        bytes32[] calldata r,
+        bytes32[] calldata s,
+        uint256 packedV
+    ) public {
+        // any one can submit proof of deposit
 
-        _approveDeposit(_groupId);
+        _verifyDeposit(receiptId, data, keepers, r, s, packedV);
 
-        _mintToUser(_groupId);
+        _approveDeposit(receiptId, data[2], uint256(data[3]));
+
+        _mintToUser(receiptId);
     }
 
-    function revokeMintRequest(uint256 _groupId, uint256 _keeperID) public {
-        // Originated from keepers, to revoke an unfinished request
-        require(groups.isGroupKeeper(_groupId, _keeperID), "only keepers");
-        _revoke(_groupId);
-    }
+    // function revokeMintRequest(uint256 _receiptId, uint256 _keeperId) public {
+    //     // Originated from keepers, to revoke an unfinished request
+    //     uint256 _groupId = receiptController.getGroupId(_receiptId);
 
-    function cancelMintRequest(uint256 _groupId) public payable {
+    //     require(groupRegistry.isGroupKeeper(_groupId, _keeperId), "only keeper within the group");
+
+    //     _revoke(_groupId, _receiptId);
+
+    //     // TODO: emit event
+    //     // User get ETH refunded
+    // }
+
+    function cancelMintRequest(uint256 _receiptId) public {
         // Originated from users, before verifyMint to cancel the btc deposit
-        require(receiptController.getUserAddress(_groupId) == _msgSender(), "only applicant");
-        _revoke(_groupId);
+        require(receiptController.getUserAddress(_receiptId) == _msgSender(), "only applicant");
+
+        uint256 _groupId = receiptController.getGroupId(_receiptId);
+
+        _revoke(_groupId, _receiptId);
+        // TODO: get ETH refunded
     }
 
-    function _verifyDeposit(uint256 _groupId, string memory _proofPlaceholder) internal {
-        // TODO: BTC need to match full amount in group
+    function _isGroupKeepers(uint256 groupId, address[] calldata keepers)
+        internal
+        view
+        returns (bool)
+    {
+        for (uint256 i = 0; i < keepers.length; i++) {
+            require(groupRegistry.isGroupKeeper(groupId, keepers[i]), "keeper is not in group");
+        }
+        return true;
     }
 
-    function _approveDeposit(uint256 _groupId) internal {
-        receiptController.depositReceived(_groupId);
-        groups.depositReceived(_groupId, receiptController.getAmountInSatoshi(_groupId));
+    function _verifyDeposit(
+        uint256 receiptId,
+        bytes32[] calldata data,
+        address[] calldata keepers,
+        bytes32[] calldata r,
+        bytes32[] calldata s,
+        uint256 packedV
+    ) internal {
+        require(
+            receiptController.getUserAddress(receiptId) == address(uint256(data[0])),
+            "recipient not match"
+        );
+        require(
+            receiptController.getAmountInSatoshi(receiptId) == uint256(data[1]),
+            "receipt amount not match"
+        );
+        uint256 groupId = receiptController.getGroupId(receiptId);
+        require(_isGroupKeepers(groupId, keepers), "not satified group keepers");
+        signatureValidator.batchValidate(receiptId, data, keepers, r, s, packedV);
     }
 
-    function _mintToUser(uint256 _groupId) internal {
-        address user = receiptController.getUserAddress(_groupId);
-        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_groupId);
+    function _approveDeposit(
+        uint256 _receiptId,
+        bytes32 _txId,
+        uint256 _height
+    ) internal {
+        receiptController.depositReceived(_receiptId, _txId, _height);
+
+        uint256 _groupId = receiptController.getGroupId(_receiptId);
+
+        groupRegistry.depositReceived(_groupId, receiptController.getAmountInSatoshi(_receiptId));
+    }
+
+    function _mintToUser(uint256 _receiptId) internal {
+        address user = receiptController.getUserAddress(_receiptId);
+        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_receiptId);
         // TODO: add fee deduction
         ebtc.mint(user, amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC()));
     }
 
-    function _revoke(uint256 _groupId) internal {
-        groups.emptyGroupLastTimestamp(_groupId);
-        receiptController.revokeRequest(_groupId);
+    function _revoke(uint256 _groupId, uint256 _receiptId) internal {
+        require(_groupId != 0, "group id 0 is not allowed");
+
+        receiptController.revokeRequest(_receiptId);
     }
 
-    function burnRequest(uint256 _groupId) public {
+    function burnRequest(uint256 _receiptId) public {
         // TODO: add fee deduction
-        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_groupId);
+        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_receiptId);
         uint256 amount = amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC());
 
         ebtc.burnFrom(_msgSender(), amount);
 
-        groups.withdrawRequested(_groupId, receiptController.getAmountInSatoshi(_groupId));
+        uint256 _groupId = receiptController.getGroupId(_receiptId);
 
-        receiptController.withdrawRequest(_groupId);
+        groupRegistry.withdrawRequested(_groupId, amountInSatoshi);
+
+        receiptController.withdrawRequest(_receiptId);
     }
 
     function verifyBurn(uint256 _groupId, string memory _proofPlaceholder) public {

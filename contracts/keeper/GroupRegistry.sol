@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
@@ -9,9 +10,10 @@ import {GroupLib} from "./GroupLib.sol";
 contract GroupRegistry is AccessControl {
     using GroupLib for GroupLib.GroupMap;
     using Counters for Counters.Counter;
+    using SafeMath for uint256;
 
     // events
-    event GroupAdded(uint256 indexed id, uint256[] keepers, string btcAddress, uint256 maxSatoshi);
+    event GroupAdded(uint256 indexed id, address[] keepers, string btcAddress, uint256 maxSatoshi);
 
     event GroupDeleted(uint256 indexed id);
 
@@ -30,27 +32,45 @@ contract GroupRegistry is AccessControl {
 
         _setupRole(GROUP_ADMIN_ROLE, group_admin);
 
-        _id_gen.increment(); // id starts from 1
+        _id_gen.increment(); // group id starts from 1
+    }
+
+    function nGroups() external view returns (uint256) {
+        return groups.nGroups();
     }
 
     function exist(uint256 _id) external view returns (bool) {
         return groups.exist(_id);
     }
 
-    function isGroupEmpty(uint256 _id) external view returns (bool) {
-        return groups.isGroupEmpty(_id);
+    function isGroupKeeper(uint256 _id, address _keeper) external view returns (bool) {
+        return groups.isGroupKeeper(_id, _keeper);
     }
 
-    function isGroupKeeper(uint256 _id, uint256 _keeperID) external view returns (bool) {
-        return groups.isGroupKeeper(_id, _keeperID);
+    function getGroupInfo(uint256 _id)
+        external
+        view
+        returns (
+            uint256 maxSatoshi,
+            uint256 currSatoshi,
+            uint256 lastWithdrawTimestamp,
+            string memory btcAddress,
+            address[] memory keepers
+        )
+    {
+        return groups.getGroupInfo(_id);
+    }
+
+    function getKeeperGroups(address _keeper, uint256 _start) external view returns (uint256) {
+        return groups.getKeeperGroups(_keeper, _start);
+    }
+
+    function getGroupKeepers(uint256 _id) external view returns (address[] memory) {
+        return groups.getGroupKeepers(_id);
     }
 
     function getGroupAllowance(uint256 _id) external view returns (uint256) {
         return groups.getGroupAllowance(_id);
-    }
-
-    function getGroupLastTimestamp(uint256 _id) external view returns (uint256) {
-        return groups.getGroupLastTimestamp(_id);
     }
 
     function getGroupId(string memory _btcAddress) external view returns (uint256) {
@@ -58,7 +78,7 @@ contract GroupRegistry is AccessControl {
     }
 
     function addGroup(
-        uint256[] calldata _keepers,
+        address[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) external returns (uint256) {
@@ -82,6 +102,7 @@ contract GroupRegistry is AccessControl {
 
     function deleteGroup(uint256 _id) external {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        require(_id != 0, "group id 0 is not allowed");
 
         // TODO: check group balance is 0
 
@@ -90,23 +111,17 @@ contract GroupRegistry is AccessControl {
         emit GroupDeleted(_id);
     }
 
-    function emptyGroupLastTimestamp(uint256 _id) external {
-        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
-        groups.emptyGroupLastTimestamp(_id);
-    }
-
-    function requestReceived(uint256 _id, uint256 _lastTimestamp) external {
-        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
-        groups.setGroupLastTimestamp(_id, _lastTimestamp);
-    }
-
     function depositReceived(uint256 _id, uint256 _amountInSatoshi) external {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        require(_id != 0, "group id 0 is not allowed");
+
         groups.addGroupSatoshi(_id, _amountInSatoshi);
     }
 
     function withdrawRequested(uint256 _id, uint256 _amountInSatoshi) external {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        require(_id != 0, "group id 0 is not allowed");
+
         groups.removeGroupSatoshi(_id, _amountInSatoshi);
     }
 }

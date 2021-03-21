@@ -11,8 +11,8 @@ library GroupLib {
         uint256 currSatoshi;
         uint256 id;
         string btcAddress;
-        uint256[] keepers;
-        uint256 lastTimestamp;
+        address[] keepers;
+        uint256 lastWithdrawTimestamp;
     }
 
     function allowance(Group storage _group) internal view returns (uint256) {
@@ -32,6 +32,43 @@ library GroupLib {
         return _map.id2index[_id] != 0;
     }
 
+    function nGroups(GroupMap storage _map) internal view returns (uint256) {
+        return _map.groups.length;
+    }
+
+    function getKeeperGroups(
+        GroupMap storage _map,
+        address _keeper,
+        uint256 _start
+    ) internal view returns (uint256) {
+        uint256 res;
+        for (uint256 i = _start; i < _map.groups.length; i++) {
+            if (i - _start >= 256) {
+                break;
+            }
+            uint256 _groupId = _map.groups[i].id;
+            if (isGroupKeeper(_map, _groupId, _keeper)) {
+                res |= (1 << (i - _start));
+            }
+        }
+        return res;
+    }
+
+    function getGroupInfo(GroupMap storage _map, uint256 _id)
+        internal
+        view
+        returns (
+            uint256 maxSatoshi,
+            uint256 currSatoshi,
+            uint256 lastWithdrawTimestamp,
+            string memory btcAddress,
+            address[] memory keepers
+        )
+    {
+        Group storage g = _map.groups[_map.id2index[_id] - 1];
+        return (g.maxSatoshi, g.currSatoshi, g.lastWithdrawTimestamp, g.btcAddress, g.keepers);
+    }
+
     function isGroupEmpty(GroupMap storage _map, uint256 _id) internal view returns (bool) {
         return _map.groups[_map.id2index[_id] - 1].currSatoshi == 0;
     }
@@ -39,11 +76,11 @@ library GroupLib {
     function isGroupKeeper(
         GroupMap storage _map,
         uint256 _id,
-        uint256 _keeperID
+        address _keeper
     ) internal view returns (bool) {
-        uint256[] memory keepers = _map.groups[_map.id2index[_id] - 1].keepers;
+        address[] memory keepers = _map.groups[_map.id2index[_id] - 1].keepers;
         for (uint256 i = 0; i < keepers.length; i++) {
-            if (keepers[i] == _keeperID) {
+            if (keepers[i] == _keeper) {
                 return true;
             }
         }
@@ -51,16 +88,16 @@ library GroupLib {
         return false;
     }
 
-    function getGroupAllowance(GroupMap storage _map, uint256 _id) internal view returns (uint256) {
-        return _map.groups[_map.id2index[_id] - 1].allowance();
-    }
-
-    function getGroupLastTimestamp(GroupMap storage _map, uint256 _id)
+    function getGroupKeepers(GroupMap storage _map, uint256 _id)
         internal
         view
-        returns (uint256)
+        returns (address[] memory)
     {
-        return _map.groups[_map.id2index[_id] - 1].lastTimestamp;
+        return _map.groups[_map.id2index[_id] - 1].keepers;
+    }
+
+    function getGroupAllowance(GroupMap storage _map, uint256 _id) internal view returns (uint256) {
+        return _map.groups[_map.id2index[_id] - 1].allowance();
     }
 
     function addGroupSatoshi(
@@ -96,23 +133,10 @@ library GroupLib {
         g.currSatoshi = 0;
     }
 
-    function setGroupLastTimestamp(
-        GroupMap storage _map,
-        uint256 _id,
-        uint256 _lastTimestamp
-    ) internal {
-        Group storage g = _map.groups[_map.id2index[_id] - 1];
-        g.lastTimestamp = _lastTimestamp;
-    }
-
-    function emptyGroupLastTimestamp(GroupMap storage _map, uint256 _id) internal {
-        _map.groups[_map.id2index[_id] - 1].lastTimestamp = 0;
-    }
-
     function addGroup(
         GroupMap storage _map,
         uint256 _id,
-        uint256[] calldata _keepers,
+        address[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) internal {
@@ -128,7 +152,7 @@ library GroupLib {
                 id: _id,
                 btcAddress: _btcAddress,
                 keepers: _keepers,
-                lastTimestamp: 0
+                lastWithdrawTimestamp: 0
             })
         );
 

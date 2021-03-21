@@ -21,23 +21,40 @@ contract ReceiptLibMock {
         return _map.getReceiptStatus(_id);
     }
 
+    function getGroupId(uint256 _receiptId) public view returns (uint256) {
+        return _map.getGroupId(_receiptId);
+    }
+
+    function isPending(uint256 _receiptId) public view returns (bool) {
+        return _map.isPending(_receiptId);
+    }
+
     function depositRequest(
+        uint256 _receiptId,
         address _user,
         uint256 _groupId,
         uint256 _amountSatoshi
     ) public {
-        _map.depositRequest(_user, _groupId, _amountSatoshi);
+        _map.depositRequest(_receiptId, _user, _groupId, _amountSatoshi);
     }
 
-    function depositReceived(uint256 _groupId) public {
-        _map.depositReceived(_groupId);
+    function receiptRevoked(uint256 _receiptId) public {
+        _map.receiptRevoked(_receiptId);
     }
 
-    function withdrawRequest(uint256 _groupId) public {
-        _map.withdrawRequest(_groupId);
+    function depositReceived(
+        uint256 _receiptId,
+        bytes32 _txId,
+        uint256 _height
+    ) public {
+        _map.depositReceived(_receiptId, _txId, _height);
     }
 
-    function withdrawCompleted(uint256 _groupId) public {
-        _map.withdrawCompleted(_groupId);
+    function withdrawRequest(uint256 _receiptId) public {
+        _map.withdrawRequest(_receiptId);
+    }
+
+    function withdrawCompleted(uint256 _receiptId) public {
+        _map.withdrawCompleted(_receiptId);
     }
 }

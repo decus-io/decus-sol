@@ -7,32 +7,33 @@
         "test": "test"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "^3.2.0"
+        "@openzeppelin/contracts": "^3.4.1"
     },
     "devDependencies": {
         "@openzeppelin/test-environment": "^0.1.7",
         "@openzeppelin/test-helpers": "^0.5.9",
-        "@truffle/hdwallet-provider": "^1.2.1",
-        "chai": "^4.2.0",
-        "eslint": "^7.18.0",
+        "@truffle/hdwallet-provider": "^1.2.3",
+        "chai": "^4.3.4",
+        "eslint": "^7.22.0",
         "eslint-config-prettier": "^7.2.0",
         "eslint-config-standard": "^16.0.2",
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-node": "^11.1.0",
-        "eslint-plugin-promise": "^4.2.1",
-        "ethers": "^5.0.26",
-        "mocha": "^8.3.0",
+        "eslint-plugin-promise": "^4.3.1",
+        "eth-sig-util": "^3.0.1",
+        "ethers": "^5.0.32",
+        "mocha": "^8.3.2",
         "prettier": "^2.2.1",
-        "prettier-plugin-solidity": "^1.0.0-beta.3",
-        "solidity-coverage": "^0.7.14",
-        "truffle-plugin-verify": "^0.5.4",
-        "eth-sig-util": "^3.0.1"
+        "prettier-plugin-solidity": "^1.0.0-beta.6",
+        "solidity-coverage": "^0.7.16",
+        "truffle-plugin-verify": "^0.5.7"
     },
     "scripts": {
         "check": "npm run lint && prettier --ignore-path .gitignore -c .",
         "fmt": "prettier --ignore-path .gitignore -w .",
         "lint": "eslint --ext .js --ignore-path .gitignore .",
-        "coverage": "truffle run coverage --file=\"test/core/DeCusSystem.test.js\" --solcoverjs ./.core.solcover.js"
+        "coverage": "truffle run coverage --file=\"test/core/DeCusSystem.test.js\" --solcoverjs ./.core.solcover.js",
+        "client": "ganache-cli -a 20 -m \"tuition produce fat desk suggest case essence wreck warfare convince razor bless\""
     },
     "keywords": [],
     "author": "decus",

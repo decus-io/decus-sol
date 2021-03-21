@@ -4,11 +4,11 @@ const AssetLib = artifacts.require("AssetLib");
 const AssetMeta = artifacts.require("AssetMeta");
 const GroupLib = artifacts.require("GroupLib");
 const CollateralLib = artifacts.require("CollateralLib");
-const KeeperNFT = artifacts.require("KeeperNFT");
 const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
 const DeCusSystem = artifacts.require("DeCusSystem");
+const SignatureValidator = artifacts.require("SignatureValidator");
 
 const externalContracts = require("./external");
 
@@ -30,23 +30,18 @@ async function deployToken(deployer, network, accounts) {
     await deployer.deploy(EBTC, accounts[0], DeCusSystem.address);
     await deployer.deploy(DeCus, accounts[0]);
 
-    let wbtc, hbtc;
-    if (network === "development") {
-        const MockHBTC = artifacts.require("HBTC");
+    let wbtc;
+    if (network === "development" || network === "test") {
         const MockWBTC = artifacts.require("WBTC");
         await deployer.deploy(MockWBTC);
-        await deployer.deploy(MockHBTC);
-        hbtc = MockWBTC.address;
-        wbtc = MockHBTC.address;
+        wbtc = MockWBTC.address;
     } else {
         // mainnet or kovan
-        hbtc = externalContracts.HBTC[network];
         wbtc = externalContracts.WBTC[network];
     }
-    console.log(`HBTC address: ${hbtc}`);
     console.log(`WBTC address: ${wbtc}`);
 
-    await deployer.deploy(AssetMeta, [wbtc, hbtc]);
+    await deployer.deploy(AssetMeta, [wbtc]);
 
     // Libs
     await deployer.deploy(AssetLib);
@@ -56,9 +51,10 @@ async function deployToken(deployer, network, accounts) {
     // keeper
     await deployer.deploy(KeeperRegistry, accounts[0], DeCusSystem.address);
 
-    await deployer.deploy(KeeperNFT, KeeperRegistry.address);
-
     // group
     await deployer.deploy(GroupRegistry, accounts[0], DeCusSystem.address);
     await deployer.deploy(ReceiptController, DeCusSystem.address);
+
+    // validator
+    await deployer.deploy(SignatureValidator);
 }

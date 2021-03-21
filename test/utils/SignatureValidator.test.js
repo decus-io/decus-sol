@@ -19,13 +19,19 @@ contract("SignatureValidator", (accounts) => {
             "54cf6ecdcebdb5bb1ef61c1d87fcd01b75a2a73f8ce7aa64273b50019d1cde84",
         ];
         this.validator = await SignatureValidator.new();
+
+        this.recipientBytes32 = web3.eth.abi.encodeParameter("address", this.recipient._address);
+        this.amount = new BN(10);
+        this.amountBytes32 = web3.eth.abi.encodeParameter("uint256", this.amount);
+        this.txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+        this.height = new BN("1940801");
+        this.heightBytes32 = web3.eth.abi.encodeParameter("uint256", this.height);
     });
 
     it("reverted with invalid signature", async () => {
-        const amount = BigNumber.from(10);
-        const nonces = [BigNumber.from(42), BigNumber.from(130)];
         const rList = [];
         const sList = [];
+        const receiptId = new BN(2222);
         let vShift = 0;
         let packedV = BigNumber.from(0);
 
@@ -34,8 +40,10 @@ contract("SignatureValidator", (accounts) => {
                 this.keeperPrivates[i],
                 this.validator.address,
                 this.recipient._address,
-                nonces[i],
-                amount
+                receiptId,
+                this.amount,
+                this.txId,
+                this.height
             );
 
             if (i === 1) {
@@ -53,10 +61,9 @@ contract("SignatureValidator", (accounts) => {
 
         await expectRevert(
             this.validator.batchValidate(
-                this.recipient._address,
-                amount,
+                receiptId,
+                [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
                 this.keepers,
-                nonces,
                 rList,
                 sList,
                 packedV
@@ -66,8 +73,7 @@ contract("SignatureValidator", (accounts) => {
     });
 
     it("batch validate and update last nonces", async () => {
-        const amount = BigNumber.from(10);
-        const nonces = [BigNumber.from(42), BigNumber.from(130)];
+        const receiptId = new BN(3333);
         const rList = [];
         const sList = [];
         let vShift = 0;
@@ -78,8 +84,10 @@ contract("SignatureValidator", (accounts) => {
                 this.keeperPrivates[i],
                 this.validator.address,
                 this.recipient._address,
-                nonces[i],
-                amount
+                receiptId,
+                this.amount,
+                this.txId,
+                this.height
             );
             const sig = ethers.utils.splitSignature(signature);
 
@@ -91,25 +99,21 @@ contract("SignatureValidator", (accounts) => {
         }
 
         await this.validator.batchValidate(
-            this.recipient._address,
-            amount,
+            receiptId,
+            [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
             this.keepers,
-            nonces,
             rList,
             sList,
             packedV
         );
 
         for (let i = 0; i < this.keepers.length; i++) {
-            expect(await this.validator.lastNonces(this.keepers[i])).to.be.bignumber.equal(
-                new BN(nonces[i].toString())
-            );
+            expect(await this.validator.verified(receiptId)).to.be.true;
         }
     });
 
     it("reverted with nonce outdated", async () => {
-        const amount = BigNumber.from(10);
-        const nonces = [BigNumber.from(42), BigNumber.from(130)];
+        const receiptId = new BN(4444);
         const rList = [];
         const sList = [];
         let vShift = 0;
@@ -120,8 +124,10 @@ contract("SignatureValidator", (accounts) => {
                 this.keeperPrivates[i],
                 this.validator.address,
                 this.recipient._address,
-                nonces[i],
-                amount
+                receiptId,
+                this.amount,
+                this.txId,
+                this.height
             );
             const sig = ethers.utils.splitSignature(signature);
 
@@ -133,10 +139,9 @@ contract("SignatureValidator", (accounts) => {
         }
 
         await this.validator.batchValidate(
-            this.recipient._address,
-            amount,
+            receiptId,
+            [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
             this.keepers,
-            nonces,
             rList,
             sList,
             packedV
@@ -144,15 +149,14 @@ contract("SignatureValidator", (accounts) => {
 
         await expectRevert(
             this.validator.batchValidate(
-                this.recipient._address,
-                amount,
+                receiptId,
+                [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
                 this.keepers,
-                nonces,
                 rList,
                 sList,
                 packedV
             ),
-            "nonce outdated"
+            "already verified"
         );
     });
 });

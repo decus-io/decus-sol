@@ -50,7 +50,7 @@ async function advanceTimeAndBlock(targetTime) {
 }
 
 const sigUtil = require("eth-sig-util");
-function sign(privateKey, verifyingContract, recipient, nonce, amount) {
+function sign(privateKey, verifyingContract, recipient, nonce, amount, txId, height) {
     const domainType = [
         { name: "name", type: "string" },
         { name: "version", type: "string" },
@@ -62,6 +62,8 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount) {
         { name: "recipient", type: "address" },
         { name: "nonce", type: "uint256" },
         { name: "amount", type: "uint256" },
+        { name: "txId", type: "bytes32" },
+        { name: "height", type: "uint256" },
     ];
 
     const domain = {
@@ -76,6 +78,8 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount) {
         recipient: recipient,
         nonce: nonce.toString(),
         amount: amount.toString(),
+        txId: txId,
+        height: height.toString(),
     };
 
     const typedData = {

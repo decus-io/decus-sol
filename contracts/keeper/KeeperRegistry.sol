@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {AssetMeta} from "../core/AssetMeta.sol";
-import {KeeperNFT} from "../keeper/KeeperNFT.sol";
 import {CollateralLib} from "../keeper/CollateralLib.sol";
 import {IKeeperImport} from "../interface/IKeeperImport.sol";
 
@@ -17,19 +16,13 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
 
     struct Context {
         uint256 base;
-        uint256 id;
         uint256 assetLength;
     }
 
     // events
-    event KeeperAdded(
-        address indexed keeper,
-        uint256 indexed tokenId,
-        address[] btc,
-        uint256[] amount
-    );
+    event KeeperAdded(address indexed keeper, address[] btc, uint256[] amount);
 
-    event KeeperDeleted(address indexed keeper, uint256 indexed tokenId);
+    event KeeperDeleted(address indexed keeper);
 
     event KeeperImported(
         address indexed from,
@@ -39,24 +32,18 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         uint256[] keeper_amounts
     );
 
-    event DependenciesSet(address indexed token, address indexed meta);
+    event DependenciesSet(address indexed meta);
 
     // const
     bytes32 public constant KEEPER_ADMIN_ROLE = keccak256("KEEPER_ADMIN_ROLE");
 
     // var
-    KeeperNFT collateral_token;
-    AssetMeta collateral_meta;
-    CollateralLib.CollateralMap keeper_collaterals;
+    AssetMeta public asset_meta;
+    CollateralLib.CollateralMap collaterals;
 
     // view func
-    function containId(uint256 _id) public view returns (bool) {
-        return keeper_collaterals.containId(_id);
-    }
-
-    function getId(address keeper) public view returns (uint256) {
-        // TODO: only one id is allowed
-        return collateral_token.tokenOfOwnerByIndex(keeper, 0);
+    function exist(address _keeper) public view returns (bool) {
+        return collaterals.exist(_keeper);
     }
 
     // write func
@@ -68,13 +55,12 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         _setupRole(KEEPER_ADMIN_ROLE, keeper_admin);
     }
 
-    function setDependencies(KeeperNFT _token, AssetMeta _meta) external {
+    function setDependencies(AssetMeta _meta) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
-        collateral_token = _token;
-        collateral_meta = _meta;
+        asset_meta = _meta;
 
-        emit DependenciesSet(address(collateral_token), address(collateral_meta));
+        emit DependenciesSet(address(asset_meta));
     }
 
     function addKeeper(
@@ -93,16 +79,13 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         _addKeeper(_keeper, _assets, _amounts);
     }
 
-    function deleteKeeper(uint256 _id) external {
+    function deleteKeeper(address _keeper) external {
+        // require admin role because we need to make sure keeper is not in any working groups
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
 
-        address _keeper = collateral_token.ownerOf(_id);
+        collaterals.deleteKeeper(_keeper);
 
-        keeper_collaterals.deleteKeeper(_id, _keeper);
-
-        collateral_token.burn(_id);
-
-        emit KeeperDeleted(_keeper, _id);
+        emit KeeperDeleted(_keeper);
     }
 
     function importKeepers(
@@ -112,7 +95,7 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         uint256[] calldata _keeper_amounts
     ) external override {
         require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
-        Context memory context = Context({base: 0, id: 0, assetLength: _assets.length});
+        Context memory context = Context({base: 0, assetLength: _assets.length});
 
         require(
             _keeper_amounts.length == context.assetLength.mul(_keepers.length),
@@ -139,7 +122,7 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         // add keeper
         for (uint256 i = 0; i < _keepers.length; i++) {
             context.base = i.mul(context.assetLength);
-            context.id = _addKeeper(
+            _addKeeper(
                 _keepers[i],
                 _assets,
                 _keeper_amounts[context.base:context.base + context.assetLength]
@@ -153,16 +136,12 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         address _keeper,
         address[] calldata _assets,
         uint256[] calldata _amounts
-    ) private returns (uint256) {
+    ) private {
         // only allow one nft per keeper
-        require(collateral_token.balanceOf(_keeper) == 0, "keeper existed");
+        require(!collaterals.exist(_keeper), "keeper existed");
 
-        uint256 _id = collateral_token.mint(_keeper);
+        collaterals.addKeeper(_keeper, _assets, _amounts, asset_meta);
 
-        keeper_collaterals.addKeeper(_id, _assets, _amounts, collateral_meta);
-
-        emit KeeperAdded(_keeper, _id, _assets, _amounts);
-
-        return _id;
+        emit KeeperAdded(_keeper, _assets, _amounts);
     }
 }

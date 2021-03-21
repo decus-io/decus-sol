@@ -22,6 +22,7 @@ const migration = async (deployer, network, accounts) => {
     const decusSystem = await DeCusSystem.deployed();
     decusSystem.setDependencies(
         EBTC.address,
+        KeeperRegistry.address,
         GroupRegistry.address,
         ReceiptController.address,
         SignatureValidator.address
@@ -29,6 +30,7 @@ const migration = async (deployer, network, accounts) => {
     console.log(
         "DeCusSystem set dependencies: %s %s %s",
         EBTC.address,
+        KeeperRegistry.address,
         GroupRegistry.address,
         ReceiptController.address,
         SignatureValidator.address

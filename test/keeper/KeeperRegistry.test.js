@@ -93,7 +93,13 @@ contract("KeeperRegistry", (accounts) => {
             expect(await this.keeperNft.ownerOf(tokenId)).to.equal(user1);
             expect(await this.keeperRegistry.containId(tokenId)).to.be.true;
             expect(await this.keeperRegistry.getId(user1)).to.be.bignumber.equal(tokenId);
-            // TODO: check keeper record
+
+            // return 0 if not exist
+            expect(await this.keeperRegistry.getId(user2)).to.be.bignumber.equal(new BN(0));
+
+            expect(await this.keeperRegistry.isKeeper(user1)).to.be.true;
+            expect(await this.keeperRegistry.isKeeper(user2)).to.be.false;
+            // TODO: check keeper event
 
             // TODO: check remaining amount
         });

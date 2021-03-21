@@ -13,6 +13,7 @@ import {SignatureValidator} from "../utils/SignatureValidator.sol";
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
 import {ReceiptController} from "../user/ReceiptController.sol";
+import {KeeperRegistry} from "../keeper/KeeperRegistry.sol";
 
 contract DeCusSystem is AccessControl, Pausable {
     using SafeMath for uint256;
@@ -28,7 +29,8 @@ contract DeCusSystem is AccessControl, Pausable {
     uint256 public constant MINT_REQUEST_GRACE_PERIOD = 24 hours;
 
     EBTC public ebtc;
-    GroupRegistry public groups;
+    GroupRegistry public groupRegistry;
+    KeeperRegistry public keeperRegistry;
     ReceiptController public receiptController;
     SignatureValidator public signatureValidator;
 
@@ -38,14 +40,16 @@ contract DeCusSystem is AccessControl, Pausable {
 
     function setDependencies(
         EBTC _ebtc,
-        GroupRegistry _groups,
+        KeeperRegistry _keeperRegistry,
+        GroupRegistry _groupRegistry,
         ReceiptController _receipts,
         SignatureValidator _validator
     ) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
-        groups = _groups;
+        keeperRegistry = _keeperRegistry;
+        groupRegistry = _groupRegistry;
         receiptController = _receipts;
         signatureValidator = _validator;
     }
@@ -57,11 +61,11 @@ contract DeCusSystem is AccessControl, Pausable {
     ) public {
         // TODO: set group admin role
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
-        groups.addGroup(_keepers, _btcAddress, _maxSatoshi);
+        groupRegistry.addGroup(_keepers, _btcAddress, _maxSatoshi);
     }
 
     function noAvailableGroup() public view returns (bool) {
-        uint256 nGroup = groups.nGroups();
+        uint256 nGroup = groupRegistry.nGroups();
         for (uint256 i = 1; i < nGroup + 1; i++) {
             if (receiptController.isGroupAvailable(i)) {
                 return false;
@@ -75,7 +79,7 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: only if group is not in pending status, and there is no other available group to request
         uint256 _receiptId = receiptController.getWorkingReceiptId(_groupId);
         require(receiptController.isStale(_receiptId), "group is occupied within grace period");
-        require(noAvailableGroup(), "There are available groups to request");
+        require(noAvailableGroup(), "There are available groups in registry to request");
 
         receiptController.revokeRequest(_receiptId);
 
@@ -89,7 +93,7 @@ contract DeCusSystem is AccessControl, Pausable {
         require(_amountInSatoshi > 0, "amount 0 is not allowed");
         require(_groupId != 0, "group id 0 is not allowed");
         require(
-            groups.getGroupAllowance(_groupId) == _amountInSatoshi,
+            groupRegistry.getGroupAllowance(_groupId) == _amountInSatoshi,
             "receipt need to fill all allowance"
         );
 
@@ -100,29 +104,27 @@ contract DeCusSystem is AccessControl, Pausable {
     }
 
     function verifyMint(
-        uint256 _receiptId,
-        uint256 amount,
-        bytes32 txId,
-        uint256 height,
+        uint256 receiptId,
+        bytes32[] calldata data, // recipient, amount, txId, height
         address[] calldata keepers,
-        uint256[] calldata nonces,
         bytes32[] calldata r,
         bytes32[] calldata s,
         uint256 packedV
     ) public {
         // any one can submit proof of deposit
-        _verifyDeposit(_receiptId, amount, txId, height, keepers, nonces, r, s, packedV);
 
-        _approveDeposit(_receiptId, txId, height);
+        _verifyDeposit(receiptId, data, keepers, r, s, packedV);
 
-        _mintToUser(_receiptId);
+        _approveDeposit(receiptId, data[2], uint256(data[3]));
+
+        _mintToUser(receiptId);
     }
 
     // function revokeMintRequest(uint256 _receiptId, uint256 _keeperId) public {
     //     // Originated from keepers, to revoke an unfinished request
     //     uint256 _groupId = receiptController.getGroupId(_receiptId);
 
-    //     require(groups.isGroupKeeper(_groupId, _keeperId), "only keeper within the group");
+    //     require(groupRegistry.isGroupKeeper(_groupId, _keeperId), "only keeper within the group");
 
     //     _revoke(_groupId, _receiptId);
 
@@ -140,25 +142,33 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: get ETH refunded
     }
 
+    function _isGroupKeepers(uint256 groupId, address[] calldata keepers) internal returns (bool) {
+        for (uint256 i = 0; i < keepers.length; i++) {
+            uint256 keeperId = keeperRegistry.getId(keepers[i]);
+            require(groupRegistry.isGroupKeeper(groupId, keeperId), "keeper is not in group");
+        }
+        return true;
+    }
+
     function _verifyDeposit(
         uint256 receiptId,
-        uint256 amount,
-        bytes32 txId,
-        uint256 height,
+        bytes32[] calldata data,
         address[] calldata keepers,
-        uint256[] calldata nonces,
         bytes32[] calldata r,
         bytes32[] calldata s,
         uint256 packedV
     ) internal {
-        // TODO: decode amount, txId, height, from data
-        address recipient = receiptController.getUserAddress(receiptId);
-        // TODO: validate keepers belong to the group
-        // uint256 groupId = receiptController.getGroupId(_receiptId);
-        // for (uint256 i = 0; i < keepers; i++) {
-        //     require(groups.isGroupKeeper(groupId, ))
-        // }
-        signatureValidator.batchValidate(recipient, amount, keepers, nonces, r, s, packedV);
+        require(
+            receiptController.getUserAddress(receiptId) == address(uint256(data[0])),
+            "recipient not match"
+        );
+        require(
+            receiptController.getAmountInSatoshi(receiptId) == uint256(data[1]),
+            "receipt amount not match"
+        );
+        uint256 groupId = receiptController.getGroupId(receiptId);
+        require(_isGroupKeepers(groupId, keepers), "not satified group keepers");
+        signatureValidator.batchValidate(receiptId, data, keepers, r, s, packedV);
     }
 
     function _approveDeposit(
@@ -170,7 +180,7 @@ contract DeCusSystem is AccessControl, Pausable {
 
         uint256 _groupId = receiptController.getGroupId(_receiptId);
 
-        groups.depositReceived(_groupId, receiptController.getAmountInSatoshi(_receiptId));
+        groupRegistry.depositReceived(_groupId, receiptController.getAmountInSatoshi(_receiptId));
     }
 
     function _mintToUser(uint256 _receiptId) internal {
@@ -195,7 +205,7 @@ contract DeCusSystem is AccessControl, Pausable {
 
         uint256 _groupId = receiptController.getGroupId(_receiptId);
 
-        groups.withdrawRequested(_groupId, amountInSatoshi);
+        groupRegistry.withdrawRequested(_groupId, amountInSatoshi);
 
         receiptController.withdrawRequest(_receiptId);
     }

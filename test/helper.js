@@ -62,8 +62,8 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount, txId, hei
         { name: "recipient", type: "address" },
         { name: "nonce", type: "uint256" },
         { name: "amount", type: "uint256" },
-        // { name: "txId", type: "bytes32" },
-        // { name: "height", type: "uint256" },
+        { name: "txId", type: "bytes32" },
+        { name: "height", type: "uint256" },
     ];
 
     const domain = {
@@ -78,8 +78,8 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount, txId, hei
         recipient: recipient,
         nonce: nonce.toString(),
         amount: amount.toString(),
-        // txId: txId,
-        // height: height.toString(),
+        txId: txId,
+        height: height.toString(),
     };
 
     const typedData = {

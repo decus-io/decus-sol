@@ -77,6 +77,7 @@ contract("DeCusSystem", (accounts) => {
         this.receipts = await ReceiptController.new(this.decus_system.address);
         this.decus_system.setDependencies(
             this.ebtc.address,
+            this.keeper_registry.address,
             this.group_registry.address,
             this.receipts.address,
             this.validator.address,
@@ -190,7 +191,6 @@ contract("DeCusSystem", (accounts) => {
             expect(await this.receipts.getUserAddress(receipt2Id)).to.equal(user2);
 
             const keepers = [this.keepers[0], this.keepers[1]];
-            const nonces = [new BN(12), new BN(23)];
             const rList = [];
             const sList = [];
             let vShift = 0;
@@ -203,7 +203,7 @@ contract("DeCusSystem", (accounts) => {
                     this.keeperPrivates[i],
                     this.validator.address,
                     recipient,
-                    nonces[i],
+                    receipt2Id,
                     group1BtcSatoshiAmount,
                     txId,
                     height
@@ -221,11 +221,13 @@ contract("DeCusSystem", (accounts) => {
 
             await this.decus_system.verifyMint(
                 receipt2Id,
-                group1BtcSatoshiAmount,
-                txId,
-                height,
+                [
+                    web3.eth.abi.encodeParameter("address", recipient),
+                    web3.eth.abi.encodeParameter("uint256", group1BtcSatoshiAmount),
+                    txId,
+                    web3.eth.abi.encodeParameter("uint256", height),
+                ],
                 keepers,
-                nonces,
                 rList,
                 sList,
                 packedV,
@@ -302,7 +304,7 @@ contract("DeCusSystem", (accounts) => {
                 this.decus_system.forceMintRequest(group0Id, group0BtcSatoshiAmount, {
                     from: user3,
                 }),
-                "There are available groups to request"
+                "There are available groups in registry to request"
             );
 
             await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 });

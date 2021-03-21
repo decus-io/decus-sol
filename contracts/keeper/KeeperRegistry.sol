@@ -45,8 +45,8 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
     bytes32 public constant KEEPER_ADMIN_ROLE = keccak256("KEEPER_ADMIN_ROLE");
 
     // var
-    KeeperNFT collateral_token;
-    AssetMeta collateral_meta;
+    KeeperNFT public collateral_token;
+    AssetMeta public collateral_meta;
     CollateralLib.CollateralMap keeper_collaterals;
 
     // view func
@@ -56,7 +56,15 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
 
     function getId(address keeper) public view returns (uint256) {
         // TODO: only one id is allowed
-        return collateral_token.tokenOfOwnerByIndex(keeper, 0);
+        if (isKeeper(keeper)) {
+            return collateral_token.tokenOfOwnerByIndex(keeper, 0);
+        } else {
+            return 0;
+        }
+    }
+
+    function isKeeper(address keeper) public view returns (bool) {
+        return collateral_token.balanceOf(keeper) > 0;
     }
 
     // write func

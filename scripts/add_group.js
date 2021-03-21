@@ -5,7 +5,7 @@ const provider = ethers.getDefaultProvider("kovan", process.env.INFURA_PROJECT_I
 const signer = new ethers.Wallet(process.env.PRIVATE_KEY || "", provider);
 
 const SystemAddr = process.env.DECUS_SYSTEM;
-const keepers = [1, 2, 3];
+const keepers = [process.env.KEEPER1, process.env.KEEPER2, process.env.KEEPER3];
 const btcAddr = "2N2NDby9imzgSTHax1uacWUihdCfW35Ld5W";
 
 const overrides = {

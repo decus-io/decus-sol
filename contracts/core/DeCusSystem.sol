@@ -55,12 +55,13 @@ contract DeCusSystem is AccessControl, Pausable {
     }
 
     function addGroup(
-        uint256[] calldata _keepers,
+        address[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) public {
         // TODO: set group admin role
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
+        // TODO: check keeper has enough collateral
         groupRegistry.addGroup(_keepers, _btcAddress, _maxSatoshi);
     }
 
@@ -142,10 +143,13 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: get ETH refunded
     }
 
-    function _isGroupKeepers(uint256 groupId, address[] calldata keepers) internal returns (bool) {
+    function _isGroupKeepers(uint256 groupId, address[] calldata keepers)
+        internal
+        view
+        returns (bool)
+    {
         for (uint256 i = 0; i < keepers.length; i++) {
-            uint256 keeperId = keeperRegistry.getId(keepers[i]);
-            require(groupRegistry.isGroupKeeper(groupId, keeperId), "keeper is not in group");
+            require(groupRegistry.isGroupKeeper(groupId, keepers[i]), "keeper is not in group");
         }
         return true;
     }

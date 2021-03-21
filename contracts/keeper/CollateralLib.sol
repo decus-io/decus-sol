@@ -19,55 +19,50 @@ library CollateralLib {
 
     struct CollateralMap {
         AssetLib.Asset[] assets;
-        mapping(uint256 => KeeperCollateral) data; // nft to collateral
+        mapping(address => KeeperCollateral) data; // keeper address to collateral
     }
 
     function addKeeper(
         CollateralMap storage _map,
-        uint256 _id,
+        address _keeper,
         address[] calldata _assets,
         uint256[] calldata _amounts,
         IAssetMeta _meta
     ) internal {
         require(_assets.length == _amounts.length, "length not match");
 
-        KeeperCollateral storage keeper = _map.data[_id];
-        require(!keeper.exists, "nft id already exist");
+        KeeperCollateral storage collateral = _map.data[_keeper];
+        require(!collateral.exists, "nft id already exist");
 
         for (uint256 i = 0; i < _assets.length; i++) {
             uint256 _index = _map.assets.length;
             _map.assets.push(AssetLib.Asset(_assets[i], _amounts[i]));
-            keeper.indexes.push(_index);
-            keeper.satoshi = keeper.satoshi.add(_map.assets[_index].getSatoshiValue(_meta));
+            collateral.indexes.push(_index);
+            collateral.satoshi = collateral.satoshi.add(_map.assets[_index].getSatoshiValue(_meta));
         }
-        keeper.exists = true;
+        collateral.exists = true;
     }
 
-    function deleteKeeper(
-        CollateralMap storage _map,
-        uint256 _id,
-        address _recipient
-    ) internal {
-        KeeperCollateral storage keeper = _map.data[_id];
-        require(keeper.exists, "nft id not exist");
+    function deleteKeeper(CollateralMap storage _map, address _keeper) internal {
+        KeeperCollateral storage collateral = _map.data[_keeper];
+        require(collateral.exists, "keeper not exist");
 
-        for (uint256 i = 0; i < keeper.indexes.length; i++) {
-            AssetLib.Asset storage _a = _map.assets[keeper.indexes[i]];
-            IERC20(_a.token).approve(_recipient, _a.amount);
+        for (uint256 i = 0; i < collateral.indexes.length; i++) {
+            AssetLib.Asset storage _a = _map.assets[collateral.indexes[i]];
+            IERC20(_a.token).approve(_keeper, _a.amount);
         }
-        delete _map.data[_id];
-        // TODO: make sure it clear the indexes
+        delete _map.data[_keeper];
     }
 
-    function containId(CollateralMap storage _map, uint256 _id) internal view returns (bool) {
-        return _map.data[_id].exists;
+    function exist(CollateralMap storage _map, address _keeper) internal view returns (bool) {
+        return _map.data[_keeper].exists;
     }
 
-    function getSatoshiValue(CollateralMap storage _map, uint256 _id)
+    function getSatoshiValue(CollateralMap storage _map, address _keeper)
         internal
         view
         returns (uint256)
     {
-        return _map.data[_id].satoshi;
+        return _map.data[_keeper].satoshi;
     }
 }

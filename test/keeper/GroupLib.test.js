@@ -5,13 +5,9 @@ const GroupLibMock = artifacts.require("GroupLibMock");
 
 /* eslint-disable no-unused-expressions */
 contract("GroupLib", (accounts) => {
-    // const [owner] = accounts;
+    const [, keeper1, keeper2, keeper3] = accounts;
 
     beforeEach(async () => {
-        this.keeper1 = new BN(100);
-        this.keeper2 = new BN(101);
-        this.keeper3 = new BN(102);
-
         this.groupId = new BN(3333);
         this.groupId2 = new BN(3334);
         this.unknownGroupID = new BN(0);
@@ -35,7 +31,7 @@ contract("GroupLib", (accounts) => {
         beforeEach(async () => {
             await this.lib.addGroup(
                 this.groupId,
-                [this.keeper1, this.keeper2],
+                [keeper1, keeper2],
                 this.btcAddress1,
                 this.allowance
             );
@@ -50,17 +46,17 @@ contract("GroupLib", (accounts) => {
 
             expect(await this.lib.isGroupEmpty(this.groupId)).to.be.true;
 
-            expect(await this.lib.isGroupKeeper(this.groupId, this.keeper1)).to.be.true;
-            expect(await this.lib.isGroupKeeper(this.groupId, this.keeper2)).to.be.true;
-            expect(await this.lib.isGroupKeeper(this.groupId, this.keeper3)).to.be.false;
+            expect(await this.lib.isGroupKeeper(this.groupId, keeper1)).to.be.true;
+            expect(await this.lib.isGroupKeeper(this.groupId, keeper2)).to.be.true;
+            expect(await this.lib.isGroupKeeper(this.groupId, keeper3)).to.be.false;
 
-            expect(JSON.stringify((await this.lib.getGroupKeepers(this.groupId)).sort())).to.equal(
-                JSON.stringify([this.keeper1, this.keeper2].sort())
-            );
+            const groupKeepers = await this.lib.getGroupKeepers(this.groupId);
+            // console.log("getGroupKeepers", groupKeepers);
+            expect(groupKeepers).to.deep.equal([keeper1, keeper2]);
 
             expect(await this.lib.nGroups()).to.be.bignumber.equal(new BN(1));
 
-            expect(await this.lib.getKeeperGroups(this.keeper1, new BN(0))).to.be.bignumber.equal(
+            expect(await this.lib.getKeeperGroups(keeper1, new BN(0))).to.be.bignumber.equal(
                 new BN(1)
             );
 
@@ -68,9 +64,7 @@ contract("GroupLib", (accounts) => {
             expect(info.maxSatoshi).to.be.bignumber.equal(this.allowance);
             expect(info.currSatoshi).to.be.bignumber.equal(new BN(0));
             expect(info.lastWithdrawTimestamp).to.be.bignumber.equal(new BN(0));
-            expect(JSON.stringify(info.keepers)).to.be.bignumber.equal(
-                JSON.stringify([this.keeper1, this.keeper2])
-            );
+            expect(info.keepers).to.deep.equal([keeper1, keeper2]);
             expect(info.btcAddress).to.be.bignumber.equal(this.btcAddress1);
         });
 
@@ -131,7 +125,7 @@ contract("GroupLib", (accounts) => {
         beforeEach(async () => {
             await this.lib.addGroup(
                 this.groupId,
-                [this.keeper1, this.keeper2],
+                [keeper1, keeper2],
                 this.btcAddress1,
                 this.allowance
             );
@@ -140,7 +134,7 @@ contract("GroupLib", (accounts) => {
         it("add another", async () => {
             await this.lib.addGroup(
                 this.groupId2,
-                [this.keeper2, this.keeper3],
+                [keeper2, keeper3],
                 this.btcAddress2,
                 this.allowance
             );
@@ -153,15 +147,15 @@ contract("GroupLib", (accounts) => {
 
             expect(await this.lib.nGroups()).to.be.bignumber.equal(new BN(2));
 
-            expect(await this.lib.getKeeperGroups(this.keeper2, new BN(0))).to.be.bignumber.equal(
+            expect(await this.lib.getKeeperGroups(keeper2, new BN(0))).to.be.bignumber.equal(
                 new BN(3)
             );
 
-            expect(await this.lib.getKeeperGroups(this.keeper3, new BN(0))).to.be.bignumber.equal(
+            expect(await this.lib.getKeeperGroups(keeper3, new BN(0))).to.be.bignumber.equal(
                 new BN(2)
             );
 
-            expect(await this.lib.getKeeperGroups(this.keeper2, new BN(1))).to.be.bignumber.equal(
+            expect(await this.lib.getKeeperGroups(keeper2, new BN(1))).to.be.bignumber.equal(
                 new BN(1)
             );
         });
@@ -170,7 +164,7 @@ contract("GroupLib", (accounts) => {
             await expectRevert(
                 this.lib.addGroup(
                     this.groupId,
-                    [this.keeper2, this.keeper3],
+                    [keeper2, keeper3],
                     this.btcAddress2,
                     this.allowance
                 ),
@@ -189,7 +183,7 @@ contract("GroupLib", (accounts) => {
         it("set allowance all", async () => {
             await this.lib.addGroup(
                 this.groupId2,
-                [this.keeper2, this.keeper3],
+                [keeper2, keeper3],
                 this.btcAddress2,
                 this.allowance
             );
@@ -206,7 +200,7 @@ contract("GroupLib", (accounts) => {
 
         //        it('add btc address', async() => {
         //            // TODO:
-        //            await this.lib.addGroup(this.groupId2, [this.keeper1, this.keeper2], this.btcAddress1, this.allowance);
+        //            await this.lib.addGroup(this.groupId2, [keeper1, keeper2], this.btcAddress1, this.allowance);
         //        })
     });
 
@@ -214,7 +208,7 @@ contract("GroupLib", (accounts) => {
         beforeEach(async () => {
             await this.lib.addGroup(
                 this.groupId,
-                [this.keeper1, this.keeper2],
+                [keeper1, keeper2],
                 this.btcAddress1,
                 this.allowance
             );

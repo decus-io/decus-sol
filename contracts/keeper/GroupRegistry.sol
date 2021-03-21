@@ -13,7 +13,7 @@ contract GroupRegistry is AccessControl {
     using SafeMath for uint256;
 
     // events
-    event GroupAdded(uint256 indexed id, uint256[] keepers, string btcAddress, uint256 maxSatoshi);
+    event GroupAdded(uint256 indexed id, address[] keepers, string btcAddress, uint256 maxSatoshi);
 
     event GroupDeleted(uint256 indexed id);
 
@@ -43,8 +43,8 @@ contract GroupRegistry is AccessControl {
         return groups.exist(_id);
     }
 
-    function isGroupKeeper(uint256 _id, uint256 _keeperId) external view returns (bool) {
-        return groups.isGroupKeeper(_id, _keeperId);
+    function isGroupKeeper(uint256 _id, address _keeper) external view returns (bool) {
+        return groups.isGroupKeeper(_id, _keeper);
     }
 
     function getGroupInfo(uint256 _id)
@@ -55,17 +55,17 @@ contract GroupRegistry is AccessControl {
             uint256 currSatoshi,
             uint256 lastWithdrawTimestamp,
             string memory btcAddress,
-            uint256[] memory keepers
+            address[] memory keepers
         )
     {
         return groups.getGroupInfo(_id);
     }
 
-    function getKeeperGroups(uint256 _keeperId, uint256 _start) external view returns (uint256) {
-        return groups.getKeeperGroups(_keeperId, _start);
+    function getKeeperGroups(address _keeper, uint256 _start) external view returns (uint256) {
+        return groups.getKeeperGroups(_keeper, _start);
     }
 
-    function getGroupKeepers(uint256 _id) external view returns (uint256[] memory) {
+    function getGroupKeepers(uint256 _id) external view returns (address[] memory) {
         return groups.getGroupKeepers(_id);
     }
 
@@ -78,7 +78,7 @@ contract GroupRegistry is AccessControl {
     }
 
     function addGroup(
-        uint256[] calldata _keepers,
+        address[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) external returns (uint256) {

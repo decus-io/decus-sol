@@ -11,7 +11,7 @@ library GroupLib {
         uint256 currSatoshi;
         uint256 id;
         string btcAddress;
-        uint256[] keepers;
+        address[] keepers;
         uint256 lastWithdrawTimestamp;
     }
 
@@ -38,7 +38,7 @@ library GroupLib {
 
     function getKeeperGroups(
         GroupMap storage _map,
-        uint256 _keeperId,
+        address _keeper,
         uint256 _start
     ) internal view returns (uint256) {
         uint256 res;
@@ -47,7 +47,7 @@ library GroupLib {
                 break;
             }
             uint256 _groupId = _map.groups[i].id;
-            if (isGroupKeeper(_map, _groupId, _keeperId)) {
+            if (isGroupKeeper(_map, _groupId, _keeper)) {
                 res |= (1 << (i - _start));
             }
         }
@@ -62,7 +62,7 @@ library GroupLib {
             uint256 currSatoshi,
             uint256 lastWithdrawTimestamp,
             string memory btcAddress,
-            uint256[] memory keepers
+            address[] memory keepers
         )
     {
         Group storage g = _map.groups[_map.id2index[_id] - 1];
@@ -76,11 +76,11 @@ library GroupLib {
     function isGroupKeeper(
         GroupMap storage _map,
         uint256 _id,
-        uint256 _keeperId
+        address _keeper
     ) internal view returns (bool) {
-        uint256[] memory keepers = _map.groups[_map.id2index[_id] - 1].keepers;
+        address[] memory keepers = _map.groups[_map.id2index[_id] - 1].keepers;
         for (uint256 i = 0; i < keepers.length; i++) {
-            if (keepers[i] == _keeperId) {
+            if (keepers[i] == _keeper) {
                 return true;
             }
         }
@@ -91,7 +91,7 @@ library GroupLib {
     function getGroupKeepers(GroupMap storage _map, uint256 _id)
         internal
         view
-        returns (uint256[] memory)
+        returns (address[] memory)
     {
         return _map.groups[_map.id2index[_id] - 1].keepers;
     }
@@ -136,7 +136,7 @@ library GroupLib {
     function addGroup(
         GroupMap storage _map,
         uint256 _id,
-        uint256[] calldata _keepers,
+        address[] calldata _keepers,
         string memory _btcAddress,
         uint256 _maxSatoshi
     ) internal {

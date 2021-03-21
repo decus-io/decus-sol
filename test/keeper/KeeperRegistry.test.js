@@ -6,7 +6,6 @@ const HBTC = artifacts.require("HBTC");
 const OtherCoin = artifacts.require("OtherCoin");
 
 const KeeperRegistry = artifacts.require("KeeperRegistry");
-const KeeperNFT = artifacts.require("KeeperNFT");
 const AssetMeta = artifacts.require("AssetMeta");
 
 /* eslint-disable no-unused-expressions */
@@ -15,7 +14,6 @@ contract("KeeperRegistry", (accounts) => {
 
     // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
-    const ADMIN_ROLE = web3.utils.soliditySha3("ADMIN_ROLE");
     const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
 
     const hbtcHolding = new BN(1000);
@@ -23,7 +21,6 @@ contract("KeeperRegistry", (accounts) => {
 
     beforeEach(async () => {
         this.keeperRegistry = await KeeperRegistry.new(owner, keeperAdmin);
-        this.keeperNft = await KeeperNFT.new(this.keeperRegistry.address, { from: owner });
 
         this.hbtc = await HBTC.new();
         this.wbtc = await WBTC.new();
@@ -36,12 +33,6 @@ contract("KeeperRegistry", (accounts) => {
     });
 
     it("role", async () => {
-        expect(await this.keeperNft.getRoleAdmin(ADMIN_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
-
-        expect(await this.keeperNft.getRoleMember(ADMIN_ROLE, 0)).to.equal(
-            this.keeperRegistry.address
-        );
-
         expect(await this.keeperRegistry.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.be.true;
 
         expect(await this.keeperRegistry.hasRole(KEEPER_ADMIN_ROLE, owner)).to.be.false;
@@ -50,27 +41,19 @@ contract("KeeperRegistry", (accounts) => {
     });
 
     it("set dependencies", async () => {
-        const receipt = await this.keeperRegistry.setDependencies(
-            this.keeperNft.address,
-            this.assetMeta.address,
-            { from: owner }
-        );
+        const receipt = await this.keeperRegistry.setDependencies(this.assetMeta.address, {
+            from: owner,
+        });
         expectEvent(receipt, "DependenciesSet", {
-            token: this.keeperNft.address,
             meta: this.assetMeta.address,
         });
     });
 
     describe("one keeper", () => {
-        const tokenId = new BN(1);
         const amount = new BN(500);
 
         beforeEach(async () => {
-            await this.keeperRegistry.setDependencies(
-                this.keeperNft.address,
-                this.assetMeta.address,
-                { from: owner }
-            );
+            await this.keeperRegistry.setDependencies(this.assetMeta.address, { from: owner });
             await this.hbtc.approve(this.keeperRegistry.address, amount, { from: user1 });
         });
 
@@ -83,22 +66,17 @@ contract("KeeperRegistry", (accounts) => {
             );
             expectEvent(receipt, "KeeperAdded", {
                 keeper: user1,
-                tokenId: tokenId,
                 btc: [this.hbtc.address],
             });
             // TODO: not sure why amount couldn't pass test, shown as below
             // expected event argument 'amount' to have value 50000 but got 50000
             // expectEvent(receipt, 'KeeperAdded', {keeper: user1, tokenId: tokenId, btc: [this.hbtc.address], amount: [amount]});
 
-            expect(await this.keeperNft.ownerOf(tokenId)).to.equal(user1);
-            expect(await this.keeperRegistry.containId(tokenId)).to.be.true;
-            expect(await this.keeperRegistry.getId(user1)).to.be.bignumber.equal(tokenId);
+            expect(await this.keeperRegistry.exist(user1)).to.be.true;
 
             // return 0 if not exist
-            expect(await this.keeperRegistry.getId(user2)).to.be.bignumber.equal(new BN(0));
+            expect(await this.keeperRegistry.exist(user2)).to.be.false;
 
-            expect(await this.keeperRegistry.isKeeper(user1)).to.be.true;
-            expect(await this.keeperRegistry.isKeeper(user2)).to.be.false;
             // TODO: check keeper event
 
             // TODO: check remaining amount
@@ -118,21 +96,18 @@ contract("KeeperRegistry", (accounts) => {
             });
 
             it("remove success", async () => {
-                await this.keeperNft.approve(this.keeperRegistry.address, tokenId, {
-                    from: user1,
-                });
-                const receipt = await this.keeperRegistry.deleteKeeper(tokenId, {
+                const receipt = await this.keeperRegistry.deleteKeeper(user1, {
                     from: keeperAdmin,
                 });
-                expectEvent(receipt, "KeeperDeleted", { keeper: user1, tokenId: tokenId });
+                expectEvent(receipt, "KeeperDeleted", { keeper: user1 });
 
-                // TODO: verify id
+                expect(await this.keeperRegistry.exist(user1)).to.be.false;
             });
 
             it("remove fail", async () => {
                 await expectRevert(
-                    this.keeperRegistry.deleteKeeper(tokenId, { from: keeperAdmin }),
-                    "ERC721Burnable: caller is not owner nor approved."
+                    this.keeperRegistry.deleteKeeper(user1, { from: user1 }),
+                    "require keeper admin role"
                 );
             });
             // TODO: other fail cases
@@ -141,11 +116,7 @@ contract("KeeperRegistry", (accounts) => {
 
     describe("import keepers", () => {
         beforeEach(async () => {
-            await this.keeperRegistry.setDependencies(
-                this.keeperNft.address,
-                this.assetMeta.address,
-                { from: owner }
-            );
+            await this.keeperRegistry.setDependencies(this.assetMeta.address, { from: owner });
 
             await this.hbtc.mint(auction, new BN(1000000));
             await this.wbtc.mint(auction, new BN(1000000));

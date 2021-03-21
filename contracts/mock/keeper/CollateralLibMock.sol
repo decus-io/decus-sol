@@ -10,20 +10,24 @@ contract CollateralLibMock {
     CollateralLib.CollateralMap _map;
     AssetLib.Asset _asset;
 
-    function containId(uint256 _id) public view returns (bool) {
-        return CollateralLib.containId(_map, _id);
+    function exist(address _keeper) public view returns (bool) {
+        return CollateralLib.exist(_map, _keeper);
     }
 
     function addKeeper(
-        uint256 _id,
+        address _keeper,
         address[] calldata _assets,
         uint256[] calldata _amounts,
         IAssetMeta _meta
     ) public {
-        CollateralLib.addKeeper(_map, _id, _assets, _amounts, _meta);
+        CollateralLib.addKeeper(_map, _keeper, _assets, _amounts, _meta);
     }
 
-    function getSatoshiValue(uint256 _id) public view returns (uint256) {
-        return CollateralLib.getSatoshiValue(_map, _id);
+    function deleteKeeper(address _keeper) public {
+        CollateralLib.deleteKeeper(_map, _keeper);
+    }
+
+    function getSatoshiValue(address _keeper) public view returns (uint256) {
+        return CollateralLib.getSatoshiValue(_map, _keeper);
     }
 }

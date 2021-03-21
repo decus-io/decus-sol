@@ -4,7 +4,6 @@ const AssetLib = artifacts.require("AssetLib");
 const AssetMeta = artifacts.require("AssetMeta");
 const GroupLib = artifacts.require("GroupLib");
 const CollateralLib = artifacts.require("CollateralLib");
-const KeeperNFT = artifacts.require("KeeperNFT");
 const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
@@ -51,8 +50,6 @@ async function deployToken(deployer, network, accounts) {
 
     // keeper
     await deployer.deploy(KeeperRegistry, accounts[0], DeCusSystem.address);
-
-    await deployer.deploy(KeeperNFT, KeeperRegistry.address);
 
     // group
     await deployer.deploy(GroupRegistry, accounts[0], DeCusSystem.address);

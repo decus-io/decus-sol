@@ -4,7 +4,7 @@ const AssetLib = artifacts.require("AssetLib");
 const AssetMeta = artifacts.require("AssetMeta");
 const CollateralLib = artifacts.require("CollateralLib");
 
-const externalContracts = require("./external");
+const { deployWBTC } = require("./helpers");
 
 // ============ Main Migration ============
 
@@ -21,18 +21,9 @@ async function deployToken(deployer, network, accounts) {
     await deployer.deploy(EBTC);
     await deployer.deploy(DeCus);
 
-    let wbtc;
-    if (network === "development" || network === "test") {
-        const MockWBTC = artifacts.require("WBTC");
-        await deployer.deploy(MockWBTC);
-        wbtc = MockWBTC.address;
-    } else {
-        // mainnet, ropsten, kovan
-        wbtc = externalContracts.WBTC[network];
-    }
-    console.log(`WBTC address: ${wbtc}`);
+    const wbtc = await deployWBTC(deployer, network);
 
-    await deployer.deploy(AssetMeta, [wbtc]);
+    await deployer.deploy(AssetMeta, [wbtc.address]);
 
     // Libs
     await deployer.deploy(AssetLib);

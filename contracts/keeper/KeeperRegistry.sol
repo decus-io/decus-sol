@@ -47,12 +47,10 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
     }
 
     // write func
-    constructor(address admin, address keeper_admin) public {
-        _setupRole(DEFAULT_ADMIN_ROLE, admin);
+    constructor() public {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _setRoleAdmin(KEEPER_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-
-        _setupRole(KEEPER_ADMIN_ROLE, keeper_admin);
     }
 
     function setDependencies(AssetMeta _meta) external {
@@ -94,7 +92,6 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         address[] calldata _keepers,
         uint256[] calldata _keeper_amounts
     ) external override {
-        require(hasRole(KEEPER_ADMIN_ROLE, _msgSender()), "require keeper admin role");
         Context memory context = Context({base: 0, assetLength: _assets.length});
 
         require(

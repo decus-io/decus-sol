@@ -20,7 +20,8 @@ contract("KeeperRegistry", (accounts) => {
     const wbtcHolding = new BN(1000);
 
     beforeEach(async () => {
-        this.keeperRegistry = await KeeperRegistry.new(owner, keeperAdmin);
+        this.keeperRegistry = await KeeperRegistry.new();
+        await this.keeperRegistry.grantRole(KEEPER_ADMIN_ROLE, keeperAdmin);
 
         this.hbtc = await HBTC.new();
         this.wbtc = await WBTC.new();

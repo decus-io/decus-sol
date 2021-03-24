@@ -12,7 +12,7 @@ contract ReceiptController is AccessControl {
     using Counters for Counters.Counter;
     using SafeMath for uint256;
 
-    bytes32 public constant RECEIPT_FACTORY_ADMIN_ROLE = keccak256("RECEIPT_FACTORY_ADMIN_ROLE");
+    bytes32 public constant RECEIPT_ADMIN_ROLE = keccak256("RECEIPT_ADMIN_ROLE");
     uint256 public constant MINT_REQUEST_GRACE_PERIOD = 8 hours;
 
     event DepositRequested(
@@ -72,11 +72,12 @@ contract ReceiptController is AccessControl {
         return ReceiptLib.isPending(receipts, receiptId);
     }
 
-    constructor(address admin) public {
-        _setupRole(RECEIPT_FACTORY_ADMIN_ROLE, admin);
+    constructor() public {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
-        // receipt id starts from 1
-        _id_gen.increment();
+        _setRoleAdmin(RECEIPT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
+
+        _id_gen.increment(); // receipt id starts from 1
     }
 
     function depositRequest(
@@ -84,7 +85,7 @@ contract ReceiptController is AccessControl {
         uint256 _groupId,
         uint256 _amountInSatoshi
     ) external returns (uint256) {
-        require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(hasRole(RECEIPT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         require(!_isPending(group2receipt[_groupId]), "group is occupied with pending receipt");
 
@@ -103,7 +104,7 @@ contract ReceiptController is AccessControl {
 
     function revokeRequest(uint256 _receiptId) external {
         require(_receiptId != 0, "receipt id 0 is not allowed");
-        require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(hasRole(RECEIPT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.receiptRevoked(receipts, _receiptId);
 
@@ -116,7 +117,7 @@ contract ReceiptController is AccessControl {
         uint256 _height
     ) external {
         require(_receiptId != 0, "receipt id 0 is not allowed");
-        require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(hasRole(RECEIPT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.depositReceived(receipts, _receiptId, _txId, _height);
 
@@ -125,7 +126,7 @@ contract ReceiptController is AccessControl {
 
     function withdrawRequest(uint256 _receiptId) external {
         require(_receiptId != 0, "receipt id 0 is not allowed");
-        require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(hasRole(RECEIPT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.withdrawRequest(receipts, _receiptId);
 
@@ -134,7 +135,7 @@ contract ReceiptController is AccessControl {
 
     function withdrawCompleted(uint256 _receiptId) external {
         require(_receiptId != 0, "receipt id 0 is not allowed");
-        require(hasRole(RECEIPT_FACTORY_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(hasRole(RECEIPT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ReceiptLib.withdrawCompleted(receipts, _receiptId);
 

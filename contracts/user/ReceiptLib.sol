@@ -16,13 +16,43 @@ library ReceiptLib {
         uint256 groupId;
         uint256 amountInSatoshi;
         uint256 createTimestamp;
-        Status status;
         bytes32 txId;
         uint256 height;
+        Status status;
+        string btcAddress; // for withdraw
     }
 
     struct ReceiptMap {
         mapping(uint256 => Receipt) receipts; // receiptId to Receipt
+    }
+
+    function getReceiptInfo(ReceiptMap storage _map, uint256 receiptId)
+        internal
+        view
+        returns (
+            uint256 id,
+            address user,
+            uint256 groupId,
+            uint256 amountInSatoshi,
+            uint256 createTimestamp,
+            bytes32 txId,
+            uint256 height,
+            uint256 status,
+            string memory btcAddress
+        )
+    {
+        Receipt storage r = _map.receipts[receiptId];
+        return (
+            r.id,
+            r.user,
+            r.groupId,
+            r.amountInSatoshi,
+            r.createTimestamp,
+            r.txId,
+            r.height,
+            uint256(r.status),
+            r.btcAddress
+        );
     }
 
     function getUserAddress(ReceiptMap storage _map, uint256 receiptId)
@@ -117,8 +147,12 @@ library ReceiptLib {
         receipt.height = _height;
     }
 
-    function withdrawRequest(ReceiptMap storage _map, uint256 _receiptId) internal {
-        Receipt storage receipt = _map.receipts[_receiptId];
+    function withdrawRequest(
+        ReceiptMap storage _map,
+        uint256 receiptId,
+        string memory btcAddress
+    ) internal {
+        Receipt storage receipt = _map.receipts[receiptId];
 
         require(
             receipt.status == Status.DepositReceived,
@@ -126,6 +160,7 @@ library ReceiptLib {
         );
 
         receipt.status = Status.WithdrawRequested;
+        receipt.btcAddress = btcAddress;
     }
 
     function withdrawCompleted(ReceiptMap storage _map, uint256 _receiptId) internal {

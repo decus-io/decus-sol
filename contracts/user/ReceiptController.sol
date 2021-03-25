@@ -26,7 +26,7 @@ contract ReceiptController is AccessControl {
 
     event DepositReceived(uint256 indexed receiptId);
 
-    event WithdrawRequested(uint256 indexed receiptId);
+    event WithdrawRequested(uint256 indexed receiptId, string btcAddress);
 
     event WithdrawCompleted(uint256 indexed receiptId);
 
@@ -122,13 +122,13 @@ contract ReceiptController is AccessControl {
         emit DepositReceived(_receiptId);
     }
 
-    function withdrawRequest(uint256 _receiptId) external {
-        require(_receiptId != 0, "receipt id 0 is not allowed");
+    function withdrawRequest(uint256 receiptId, string memory btcAddress) external {
         require(hasRole(RECEIPT_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(receiptId != 0, "receipt id 0 is not allowed");
 
-        ReceiptLib.withdrawRequest(receipts, _receiptId);
+        ReceiptLib.withdrawRequest(receipts, receiptId, btcAddress);
 
-        emit WithdrawRequested(_receiptId);
+        emit WithdrawRequested(receiptId, btcAddress);
     }
 
     function withdrawCompleted(uint256 _receiptId) external {

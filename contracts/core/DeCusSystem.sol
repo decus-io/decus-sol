@@ -65,15 +65,14 @@ contract DeCusSystem is AccessControl, Pausable {
         string memory _btcAddress,
         address[] calldata _keepers
     ) public {
-        // TODO: set group admin role
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require admin role");
         // TODO: check keeper has enough collateral
         groupRegistry.addGroup(_required, _maxSatoshi, _btcAddress, _keepers);
     }
 
     function deleteGroup(uint256 _id) public {
-        // TODO: set group admin role
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require admin role");
+        // TODO: check group has no asset
         groupRegistry.deleteGroup(_id);
     }
 
@@ -219,28 +218,22 @@ contract DeCusSystem is AccessControl, Pausable {
         receiptController.revokeRequest(_receiptId);
     }
 
-    function burnRequest(uint256 _receiptId) public {
+    function burnRequest(uint256 receiptId, string memory btcAddress) public {
         // TODO: add fee deduction
-        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_receiptId);
+        uint256 amountInSatoshi = receiptController.getAmountInSatoshi(receiptId);
         uint256 amount = amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC());
 
         ebtc.burnFrom(_msgSender(), amount);
 
-        uint256 _groupId = receiptController.getGroupId(_receiptId);
+        uint256 _groupId = receiptController.getGroupId(receiptId);
 
         groupRegistry.withdrawRequested(_groupId, amountInSatoshi);
 
-        receiptController.withdrawRequest(_receiptId);
+        receiptController.withdrawRequest(receiptId, btcAddress);
     }
 
-    function verifyBurn(uint256 _groupId, string memory _proofPlaceholder) public {
-        _verifyBurn(_groupId, _proofPlaceholder);
-
-        receiptController.withdrawCompleted(_groupId);
-    }
-
-    function _verifyBurn(uint256 _groupId, string memory _proofPlaceholder) internal {
-        // TODO: verify
+    function verifyBurn(uint256 receiptId) public {
+        receiptController.withdrawCompleted(receiptId);
     }
 
     function prosecute(uint256 _receiptId) public {

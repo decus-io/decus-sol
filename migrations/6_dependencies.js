@@ -6,19 +6,33 @@ const ReceiptController = artifacts.require("ReceiptController");
 const SignatureValidator = artifacts.require("SignatureValidator");
 const DeCusSystem = artifacts.require("DeCusSystem");
 
-const externalContracts = require("./external");
+const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
+const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
+const GROUP_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
+const RECEIPT_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
 
 const migration = async (deployer, network, accounts) => {
+    const decusSystem = await DeCusSystem.deployed();
+
+    // tokens
+    const ebtc = await EBTC.deployed();
+    await ebtc.grantRole(MINTER_ROLE, decusSystem.address);
+
+    // keeper
     const keeperRegistry = await KeeperRegistry.deployed();
     keeperRegistry.setDependencies(AssetMeta.address);
+    await keeperRegistry.grantRole(KEEPER_ADMIN_ROLE, decusSystem.address);
     console.log("KeeperRegistry set dependencies: %s", AssetMeta.address);
 
-    if (network !== "development" && network !== "test") {
-        const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
-        await keeperRegistry.grantRole(KEEPER_ADMIN_ROLE, externalContracts.AUCTION[network]);
-    }
+    // group
+    const groupRegistry = await GroupRegistry.deployed();
+    await groupRegistry.grantRole(GROUP_ADMIN_ROLE, decusSystem.address);
 
-    const decusSystem = await DeCusSystem.deployed();
+    // receipt
+    const receiptController = await ReceiptController.deployed();
+    await receiptController.grantRole(RECEIPT_ADMIN_ROLE, decusSystem.address);
+
+    // decus system
     decusSystem.setDependencies(
         EBTC.address,
         KeeperRegistry.address,

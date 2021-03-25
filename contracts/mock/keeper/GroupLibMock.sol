@@ -29,9 +29,9 @@ contract GroupLibMock {
         public
         view
         returns (
+            uint256 required,
             uint256 maxSatoshi,
             uint256 currSatoshi,
-            uint256 lastWithdrawTimestamp,
             string memory btcAddress,
             address[] memory keepers
         )
@@ -69,11 +69,12 @@ contract GroupLibMock {
 
     function addGroup(
         uint256 _id,
-        address[] calldata _keepers,
+        uint256 _required,
+        uint256 _maxSatoshi,
         string memory _btcAddress,
-        uint256 _maxSatoshi
+        address[] calldata _keepers
     ) public {
-        return GroupLib.addGroup(_map, _id, _keepers, _btcAddress, _maxSatoshi);
+        return GroupLib.addGroup(_map, _id, _required, _maxSatoshi, _btcAddress, _keepers);
     }
 
     function deleteGroup(uint256 _id) public {

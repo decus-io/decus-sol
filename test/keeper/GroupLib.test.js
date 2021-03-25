@@ -8,6 +8,7 @@ contract("GroupLib", (accounts) => {
     const [, keeper1, keeper2, keeper3] = accounts;
 
     beforeEach(async () => {
+        this.required = new BN(2);
         this.groupId = new BN(3333);
         this.groupId2 = new BN(3334);
         this.unknownGroupID = new BN(0);
@@ -29,12 +30,10 @@ contract("GroupLib", (accounts) => {
 
     describe("one group", () => {
         beforeEach(async () => {
-            await this.lib.addGroup(
-                this.groupId,
-                [keeper1, keeper2],
-                this.btcAddress1,
-                this.allowance
-            );
+            await this.lib.addGroup(this.groupId, this.required, this.allowance, this.btcAddress1, [
+                keeper1,
+                keeper2,
+            ]);
         });
 
         it("check", async () => {
@@ -63,7 +62,7 @@ contract("GroupLib", (accounts) => {
             const info = await this.lib.getGroupInfo(this.groupId);
             expect(info.maxSatoshi).to.be.bignumber.equal(this.allowance);
             expect(info.currSatoshi).to.be.bignumber.equal(new BN(0));
-            expect(info.lastWithdrawTimestamp).to.be.bignumber.equal(new BN(0));
+            expect(info.required).to.be.bignumber.equal(this.required);
             expect(info.keepers).to.deep.equal([keeper1, keeper2]);
             expect(info.btcAddress).to.be.bignumber.equal(this.btcAddress1);
         });
@@ -123,20 +122,19 @@ contract("GroupLib", (accounts) => {
 
     describe("group add", () => {
         beforeEach(async () => {
-            await this.lib.addGroup(
-                this.groupId,
-                [keeper1, keeper2],
-                this.btcAddress1,
-                this.allowance
-            );
+            await this.lib.addGroup(this.groupId, this.required, this.allowance, this.btcAddress1, [
+                keeper1,
+                keeper2,
+            ]);
         });
 
         it("add another", async () => {
             await this.lib.addGroup(
                 this.groupId2,
-                [keeper2, keeper3],
+                this.required,
+                this.allowance,
                 this.btcAddress2,
-                this.allowance
+                [keeper2, keeper3]
             );
 
             expect(await this.lib.exist(this.groupId2)).to.be.true;
@@ -162,12 +160,10 @@ contract("GroupLib", (accounts) => {
 
         it("add dup id", async () => {
             await expectRevert(
-                this.lib.addGroup(
-                    this.groupId,
-                    [keeper2, keeper3],
-                    this.btcAddress2,
-                    this.allowance
-                ),
+                this.lib.addGroup(this.groupId, this.required, this.allowance, this.btcAddress2, [
+                    keeper2,
+                    keeper3,
+                ]),
                 "group id already exist"
             );
         });
@@ -183,9 +179,10 @@ contract("GroupLib", (accounts) => {
         it("set allowance all", async () => {
             await this.lib.addGroup(
                 this.groupId2,
-                [keeper2, keeper3],
+                this.required,
+                this.allowance,
                 this.btcAddress2,
-                this.allowance
+                [keeper2, keeper3]
             );
 
             await this.lib.setMaxSatoshiAll(this.allowance2);
@@ -197,21 +194,14 @@ contract("GroupLib", (accounts) => {
                 this.allowance2
             );
         });
-
-        //        it('add btc address', async() => {
-        //            // TODO:
-        //            await this.lib.addGroup(this.groupId2, [keeper1, keeper2], this.btcAddress1, this.allowance);
-        //        })
     });
 
     describe("delete", () => {
         beforeEach(async () => {
-            await this.lib.addGroup(
-                this.groupId,
-                [keeper1, keeper2],
-                this.btcAddress1,
-                this.allowance
-            );
+            await this.lib.addGroup(this.groupId, this.required, this.allowance, this.btcAddress1, [
+                keeper1,
+                keeper2,
+            ]);
         });
 
         it("delete", async () => {

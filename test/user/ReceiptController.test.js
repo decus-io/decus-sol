@@ -7,7 +7,7 @@ const ReceiptController = artifacts.require("ReceiptController");
 contract("ReceiptController", (accounts) => {
     const [owner, user1] = accounts;
 
-    const RECEIPT_FACTORY_ADMIN_ROLE = web3.utils.soliditySha3("RECEIPT_FACTORY_ADMIN_ROLE");
+    const RECEIPT_ADMIN_ROLE = web3.utils.soliditySha3("RECEIPT_ADMIN_ROLE");
 
     beforeEach(async () => {
         this.receiptId = new BN(1);
@@ -15,15 +15,17 @@ contract("ReceiptController", (accounts) => {
 
         this.amount = new BN(100000);
 
-        this.controller = await ReceiptController.new(owner);
+        this.controller = await ReceiptController.new();
+        await this.controller.grantRole(RECEIPT_ADMIN_ROLE, owner);
+
         this.txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
         this.height = new BN("1940801");
     });
 
     it("role", async () => {
-        expect(await this.controller.hasRole(RECEIPT_FACTORY_ADMIN_ROLE, owner)).to.be.true;
+        expect(await this.controller.hasRole(RECEIPT_ADMIN_ROLE, owner)).to.be.true;
 
-        expect(await this.controller.hasRole(RECEIPT_FACTORY_ADMIN_ROLE, user1)).to.be.false;
+        expect(await this.controller.hasRole(RECEIPT_ADMIN_ROLE, user1)).to.be.false;
     });
 
     it("request deposit", async () => {

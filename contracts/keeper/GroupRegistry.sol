@@ -13,7 +13,13 @@ contract GroupRegistry is AccessControl {
     using SafeMath for uint256;
 
     // events
-    event GroupAdded(uint256 indexed id, address[] keepers, string btcAddress, uint256 maxSatoshi);
+    event GroupAdded(
+        uint256 indexed id,
+        uint256 required,
+        uint256 maxSatoshi,
+        string btcAddress,
+        address[] keepers
+    );
 
     event GroupDeleted(uint256 indexed id);
 
@@ -25,12 +31,8 @@ contract GroupRegistry is AccessControl {
     GroupLib.GroupMap groups;
     mapping(string => uint256) address2id; // id starts from 1
 
-    constructor(address admin, address group_admin) public {
-        _setupRole(DEFAULT_ADMIN_ROLE, admin);
-
-        _setRoleAdmin(GROUP_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-
-        _setupRole(GROUP_ADMIN_ROLE, group_admin);
+    constructor() public {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _id_gen.increment(); // group id starts from 1
     }
@@ -51,9 +53,9 @@ contract GroupRegistry is AccessControl {
         external
         view
         returns (
+            uint256 required,
             uint256 maxSatoshi,
             uint256 currSatoshi,
-            uint256 lastWithdrawTimestamp,
             string memory btcAddress,
             address[] memory keepers
         )
@@ -73,21 +75,26 @@ contract GroupRegistry is AccessControl {
         return groups.getGroupAllowance(_id);
     }
 
+    function getGroupRequired(uint256 _id) external view returns (uint256) {
+        return groups.getGroupRequired(_id);
+    }
+
     function getGroupId(string memory _btcAddress) external view returns (uint256) {
         return address2id[_btcAddress];
     }
 
     function addGroup(
-        address[] calldata _keepers,
+        uint256 _required,
+        uint256 _maxSatoshi,
         string memory _btcAddress,
-        uint256 _maxSatoshi
+        address[] calldata _keepers
     ) external returns (uint256) {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
         // TODO: verify btc address is controlled by the _keepers
 
         uint256 _id = _new_id(_btcAddress);
-        groups.addGroup(_id, _keepers, _btcAddress, _maxSatoshi);
-        emit GroupAdded(_id, _keepers, _btcAddress, _maxSatoshi);
+        groups.addGroup(_id, _required, _maxSatoshi, _btcAddress, _keepers);
+        emit GroupAdded(_id, _required, _maxSatoshi, _btcAddress, _keepers);
         return _id;
     }
 

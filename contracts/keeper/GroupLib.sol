@@ -7,12 +7,12 @@ library GroupLib {
     using SafeMath for uint256;
 
     struct Group {
+        uint256 id;
+        uint256 required;
         uint256 maxSatoshi;
         uint256 currSatoshi;
-        uint256 id;
         string btcAddress;
         address[] keepers;
-        uint256 lastWithdrawTimestamp;
     }
 
     function allowance(Group storage _group) internal view returns (uint256) {
@@ -58,15 +58,15 @@ library GroupLib {
         internal
         view
         returns (
+            uint256 required,
             uint256 maxSatoshi,
             uint256 currSatoshi,
-            uint256 lastWithdrawTimestamp,
             string memory btcAddress,
             address[] memory keepers
         )
     {
         Group storage g = _map.groups[_map.id2index[_id] - 1];
-        return (g.maxSatoshi, g.currSatoshi, g.lastWithdrawTimestamp, g.btcAddress, g.keepers);
+        return (g.required, g.maxSatoshi, g.currSatoshi, g.btcAddress, g.keepers);
     }
 
     function isGroupEmpty(GroupMap storage _map, uint256 _id) internal view returns (bool) {
@@ -98,6 +98,10 @@ library GroupLib {
 
     function getGroupAllowance(GroupMap storage _map, uint256 _id) internal view returns (uint256) {
         return _map.groups[_map.id2index[_id] - 1].allowance();
+    }
+
+    function getGroupRequired(GroupMap storage _map, uint256 _id) internal view returns (uint256) {
+        return _map.groups[_map.id2index[_id] - 1].required;
     }
 
     function addGroupSatoshi(
@@ -136,9 +140,10 @@ library GroupLib {
     function addGroup(
         GroupMap storage _map,
         uint256 _id,
-        address[] calldata _keepers,
+        uint256 _required,
+        uint256 _maxSatoshi,
         string memory _btcAddress,
-        uint256 _maxSatoshi
+        address[] calldata _keepers
     ) internal {
         // similar to openzeppelin EnumerableMap implementation
         uint256 keyIndex = _map.id2index[_id];
@@ -147,12 +152,12 @@ library GroupLib {
 
         _map.groups.push(
             Group({
+                id: _id,
+                required: _required,
                 maxSatoshi: _maxSatoshi,
                 currSatoshi: 0,
-                id: _id,
                 btcAddress: _btcAddress,
-                keepers: _keepers,
-                lastWithdrawTimestamp: 0
+                keepers: _keepers
             })
         );
 

@@ -26,16 +26,20 @@ contract DeCusSystem is AccessControl, Pausable {
     );
     event MintReceived(uint256 indexed groupId);
 
+    // const
     uint256 public constant MINT_REQUEST_GRACE_PERIOD = 24 hours;
+    bytes32 public constant GROUP_ADMIN_ROLE = keccak256("GROUP_ADMIN_ROLE");
 
     EBTC public ebtc;
     GroupRegistry public groupRegistry;
     KeeperRegistry public keeperRegistry;
     ReceiptController public receiptController;
-    SignatureValidator public signatureValidator;
+    SignatureValidator signatureValidator;
 
-    constructor(address _admin) public {
-        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+    constructor() public {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+
+        _setupRole(GROUP_ADMIN_ROLE, _msgSender());
     }
 
     function setDependencies(
@@ -45,6 +49,7 @@ contract DeCusSystem is AccessControl, Pausable {
         ReceiptController _receipts,
         SignatureValidator _validator
     ) external {
+        // TODO: add timelock
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
 
         ebtc = _ebtc;
@@ -55,14 +60,21 @@ contract DeCusSystem is AccessControl, Pausable {
     }
 
     function addGroup(
-        address[] calldata _keepers,
+        uint256 _required,
+        uint256 _maxSatoshi,
         string memory _btcAddress,
-        uint256 _maxSatoshi
+        address[] calldata _keepers
     ) public {
         // TODO: set group admin role
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
         // TODO: check keeper has enough collateral
-        groupRegistry.addGroup(_keepers, _btcAddress, _maxSatoshi);
+        groupRegistry.addGroup(_required, _maxSatoshi, _btcAddress, _keepers);
+    }
+
+    function deleteGroup(uint256 _id) public {
+        // TODO: set group admin role
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
+        groupRegistry.deleteGroup(_id);
     }
 
     function noAvailableGroup() public view returns (bool) {
@@ -77,7 +89,6 @@ contract DeCusSystem is AccessControl, Pausable {
 
     function forceMintRequest(uint256 _groupId, uint256 _amountInSatoshi) public {
         // Use this function if we want to override a working group
-        // TODO: only if group is not in pending status, and there is no other available group to request
         uint256 _receiptId = receiptController.getWorkingReceiptId(_groupId);
         require(receiptController.isStale(_receiptId), "group is occupied within grace period");
         require(noAvailableGroup(), "There are available groups in registry to request");
@@ -107,7 +118,7 @@ contract DeCusSystem is AccessControl, Pausable {
     function verifyMint(
         uint256 receiptId,
         bytes32[] calldata data, // recipient, amount, txId, height
-        address[] calldata keepers,
+        address[] calldata keepers, // keepers must be in ascending orders
         bytes32[] calldata r,
         bytes32[] calldata s,
         uint256 packedV
@@ -143,13 +154,20 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: get ETH refunded
     }
 
-    function _isGroupKeepers(uint256 groupId, address[] calldata keepers)
+    function _satisfyGroupKeepers(uint256 groupId, address[] calldata keepers)
         internal
         view
         returns (bool)
     {
+        uint256 required = groupRegistry.getGroupRequired(groupId);
+        require(keepers.length >= required, "not enough keepers");
+
+        address last;
         for (uint256 i = 0; i < keepers.length; i++) {
-            require(groupRegistry.isGroupKeeper(groupId, keepers[i]), "keeper is not in group");
+            address k = keepers[i];
+            require(k > last, "keepers not in ascending orders");
+            last = k;
+            require(groupRegistry.isGroupKeeper(groupId, k), "keeper is not in group");
         }
         return true;
     }
@@ -171,7 +189,8 @@ contract DeCusSystem is AccessControl, Pausable {
             "receipt amount not match"
         );
         uint256 groupId = receiptController.getGroupId(receiptId);
-        require(_isGroupKeepers(groupId, keepers), "not satified group keepers");
+        require(_satisfyGroupKeepers(groupId, keepers), "not satified group keepers");
+
         signatureValidator.batchValidate(receiptId, data, keepers, r, s, packedV);
     }
 
@@ -224,7 +243,7 @@ contract DeCusSystem is AccessControl, Pausable {
         // TODO: verify
     }
 
-    function prosecute(uint256 _groupId) public {
+    function prosecute(uint256 _receiptId) public {
         // TODO: bad behavior report
     }
 }

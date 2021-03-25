@@ -33,7 +33,7 @@ const overrides = {
 
 // approve("1000000000000");
 
-const amount = 10000000;
+const amount = 100000;
 const keeperRegistry = new ethers.Contract(KeeperRegistryAddr, keeperRegistryAbi.abi, signer);
 
 const addKeeper = async (amount) => {

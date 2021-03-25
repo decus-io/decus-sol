@@ -13,10 +13,9 @@ const GroupRegistry = artifacts.require("GroupRegistry");
 contract("GroupRegistry", (accounts) => {
     const [owner, decusSystem, keeper1, keeper2] = accounts;
 
-    // TODO: can we use value from *.sol?
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
-    // const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
     const GROUP_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
+    const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
 
     const hbtcHolding = new BN(1000);
     const wbtcHolding = new BN(1000);
@@ -27,7 +26,8 @@ contract("GroupRegistry", (accounts) => {
         this.other = await OtherCoin.new();
         this.asset_meta = await AssetMeta.new([this.hbtc.address, this.wbtc.address]);
 
-        this.keeper_registry = await KeeperRegistry.new(owner, decusSystem);
+        this.keeper_registry = await KeeperRegistry.new();
+        await this.keeper_registry.grantRole(KEEPER_ADMIN_ROLE, decusSystem);
         await this.keeper_registry.setDependencies(this.asset_meta.address, { from: owner });
 
         await this.hbtc.mint(keeper1, hbtcHolding);
@@ -36,7 +36,8 @@ contract("GroupRegistry", (accounts) => {
         await this.hbtc.mint(keeper2, hbtcHolding);
         await this.wbtc.mint(keeper2, wbtcHolding);
 
-        this.group_registry = await GroupRegistry.new(owner, decusSystem);
+        this.group_registry = await GroupRegistry.new();
+        await this.group_registry.grantRole(GROUP_ADMIN_ROLE, decusSystem);
     });
 
     it("role", async () => {
@@ -50,6 +51,7 @@ contract("GroupRegistry", (accounts) => {
     describe("add", () => {
         const groupId = new BN(1);
         const amount = new BN(500);
+        const required = new BN(2);
         const btcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
 
         beforeEach(async () => {
@@ -66,14 +68,21 @@ contract("GroupRegistry", (accounts) => {
         });
 
         it("add", async () => {
-            const rsp = await this.group_registry.addGroup(this.keepers, btcAddress, amount, {
-                from: decusSystem,
-            });
+            const rsp = await this.group_registry.addGroup(
+                required,
+                amount,
+                btcAddress,
+                this.keepers,
+                {
+                    from: decusSystem,
+                }
+            );
             expectEvent(rsp, "GroupAdded", {
                 id: groupId,
-                keepers: this.keepers,
-                btcAddress: btcAddress,
+                required: required,
                 maxSatoshi: amount,
+                btcAddress: btcAddress,
+                keepers: this.keepers,
             });
 
             expect(await this.group_registry.getGroupId(btcAddress)).to.be.bignumber.equal(groupId);
@@ -84,11 +93,11 @@ contract("GroupRegistry", (accounts) => {
         });
 
         it("reject dup id", async () => {
-            await this.group_registry.addGroup(this.keepers, btcAddress, amount, {
+            await this.group_registry.addGroup(required, amount, btcAddress, this.keepers, {
                 from: decusSystem,
             });
             await expectRevert(
-                this.group_registry.addGroup(this.keepers, btcAddress, amount, {
+                this.group_registry.addGroup(required, amount, btcAddress, this.keepers, {
                     from: decusSystem,
                 }),
                 "group address already exist"
@@ -97,7 +106,7 @@ contract("GroupRegistry", (accounts) => {
 
         describe("delete", () => {
             beforeEach(async () => {
-                await this.group_registry.addGroup(this.keepers, btcAddress, amount, {
+                await this.group_registry.addGroup(required, amount, btcAddress, this.keepers, {
                     from: decusSystem,
                 });
             });

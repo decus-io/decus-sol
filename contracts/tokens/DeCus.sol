@@ -11,8 +11,8 @@ contract DeCus is ERC20, AccessControl {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor(address minter) public ERC20(_name, _symbol) {
-        _setupRole(MINTER_ROLE, minter);
+    constructor() public ERC20(_name, _symbol) {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     function mint(address to, uint256 amount) public {

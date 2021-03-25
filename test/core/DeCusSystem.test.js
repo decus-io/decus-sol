@@ -21,9 +21,10 @@ contract("DeCusSystem", (accounts) => {
     const [owner, user1, user2, user3] = accounts;
 
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
-    // const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
+    const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
     const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
     const GROUP_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
+    const RECEIPT_ADMIN_ROLE = web3.utils.soliditySha3("RECEIPT_ADMIN_ROLE");
 
     const hbtcMultiplier = new BN(10).pow(new BN(10));
     const wbtcHolding = new BN(1000);
@@ -60,15 +61,20 @@ contract("DeCusSystem", (accounts) => {
         this.other = await OtherCoin.new();
         this.asset_meta = await AssetMeta.new([this.hbtc.address, this.wbtc.address]);
 
-        this.keeper_registry = await KeeperRegistry.new(owner, owner);
+        this.keeper_registry = await KeeperRegistry.new();
+        await this.keeper_registry.grantRole(KEEPER_ADMIN_ROLE, owner);
         await this.keeper_registry.setDependencies(this.asset_meta.address, { from: owner });
 
-        this.decus_system = await DeCusSystem.new(owner);
-        this.ebtc = await EBTC.new(owner, this.decus_system.address);
+        this.decus_system = await DeCusSystem.new();
+        this.ebtc = await EBTC.new();
+        await this.ebtc.grantRole(MINTER_ROLE, this.decus_system.address);
 
         this.validator = await SignatureValidator.new();
-        this.group_registry = await GroupRegistry.new(owner, this.decus_system.address);
-        this.receipts = await ReceiptController.new(this.decus_system.address);
+        this.group_registry = await GroupRegistry.new();
+        await this.group_registry.grantRole(GROUP_ADMIN_ROLE, this.decus_system.address);
+
+        this.receipts = await ReceiptController.new();
+        await this.receipts.grantRole(RECEIPT_ADMIN_ROLE, this.decus_system.address);
         this.decus_system.setDependencies(
             this.ebtc.address,
             this.keeper_registry.address,
@@ -95,18 +101,21 @@ contract("DeCusSystem", (accounts) => {
 
         this.group0Keepers = [this.keepers[1], this.keepers[2]];
         this.group1Keepers = [this.keepers[0], this.keepers[1]];
+        this.required = new BN(2);
 
         await this.decus_system.addGroup(
-            this.group0Keepers,
-            group0BtcAddress,
+            this.required,
             group0BtcSatoshiAmount,
+            group0BtcAddress,
+            this.group0Keepers,
             { from: owner }
         );
 
         await this.decus_system.addGroup(
-            this.group1Keepers,
-            group1BtcAddress,
+            this.required,
             group1BtcSatoshiAmount,
+            group1BtcAddress,
+            this.group1Keepers,
             { from: owner }
         );
     });

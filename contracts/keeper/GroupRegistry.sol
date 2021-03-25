@@ -34,8 +34,6 @@ contract GroupRegistry is AccessControl {
     constructor() public {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
-        _setRoleAdmin(GROUP_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-
         _id_gen.increment(); // group id starts from 1
     }
 

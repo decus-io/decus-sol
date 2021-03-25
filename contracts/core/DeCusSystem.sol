@@ -39,8 +39,6 @@ contract DeCusSystem is AccessControl, Pausable {
     constructor() public {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
-        _setRoleAdmin(GROUP_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-
         _setupRole(GROUP_ADMIN_ROLE, _msgSender());
     }
 

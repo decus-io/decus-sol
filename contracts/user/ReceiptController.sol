@@ -75,8 +75,6 @@ contract ReceiptController is AccessControl {
     constructor() public {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
-        _setRoleAdmin(RECEIPT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-
         _id_gen.increment(); // receipt id starts from 1
     }
 

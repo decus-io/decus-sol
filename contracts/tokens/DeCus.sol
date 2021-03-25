@@ -13,8 +13,6 @@ contract DeCus is ERC20, AccessControl {
 
     constructor() public ERC20(_name, _symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
-        _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
     }
 
     function mint(address to, uint256 amount) public {

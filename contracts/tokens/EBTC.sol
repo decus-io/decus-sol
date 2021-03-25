@@ -16,9 +16,6 @@ contract EBTC is ERC20Burnable, ERC20Pausable, AccessControl {
 
     constructor() public ERC20(_name, _symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
-        _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
-        _setRoleAdmin(PAUSER_ROLE, DEFAULT_ADMIN_ROLE);
     }
 
     function mint(address to, uint256 amount) public {

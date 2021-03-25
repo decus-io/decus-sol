@@ -49,8 +49,6 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
     // write func
     constructor() public {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
-        _setRoleAdmin(KEEPER_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
     }
 
     function setDependencies(AssetMeta _meta) external {

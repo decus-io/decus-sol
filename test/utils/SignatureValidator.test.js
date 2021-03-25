@@ -1,7 +1,7 @@
 const { BN, expectRevert } = require("@openzeppelin/test-helpers");
 const { expect } = require("chai");
-const { ethers, providers, BigNumber } = require("ethers");
-const { sign } = require("../helper.js");
+const { providers } = require("ethers");
+const { prepareSignature } = require("../helper.js");
 
 const SignatureValidator = artifacts.require("SignatureValidator");
 
@@ -29,40 +29,20 @@ contract("SignatureValidator", (accounts) => {
     });
 
     it("reverted with invalid signature", async () => {
-        const rList = [];
-        const sList = [];
         const receiptId = new BN(2222);
-        let vShift = 0;
-        let packedV = BigNumber.from(0);
-
-        for (let i = 0; i < this.keepers.length; i++) {
-            let signature = await sign(
-                this.keeperPrivates[i],
-                this.validator.address,
-                this.recipient._address,
-                receiptId,
-                this.amount,
-                this.txId,
-                this.height
-            );
-
-            if (i === 1) {
-                signature =
-                    "0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c";
-            }
-            const sig = ethers.utils.splitSignature(signature);
-
-            rList.push(sig.r);
-            sList.push(sig.s);
-            packedV = packedV.or(BigNumber.from(sig.v).shl(vShift));
-
-            vShift += 8;
-        }
+        const [rList, sList, packedV] = prepareSignature(
+            [this.keeperPrivates[0], this.keeperPrivates[0]],
+            this.validator.address,
+            this.recipient._address,
+            receiptId,
+            this.amount,
+            this.txId,
+            this.height
+        );
 
         await expectRevert(
             this.validator.batchValidate(
-                receiptId,
-                [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
+                [this.recipient._address, receiptId, this.amount, this.txId, this.height],
                 this.keepers,
                 rList,
                 sList,
@@ -72,91 +52,83 @@ contract("SignatureValidator", (accounts) => {
         );
     });
 
-    it("batch validate and update last nonces", async () => {
+    it("batch validate", async () => {
         const receiptId = new BN(3333);
-        const rList = [];
-        const sList = [];
-        let vShift = 0;
-        let packedV = BigNumber.from(0);
-
-        for (let i = 0; i < this.keepers.length; i++) {
-            const signature = await sign(
-                this.keeperPrivates[i],
-                this.validator.address,
-                this.recipient._address,
-                receiptId,
-                this.amount,
-                this.txId,
-                this.height
-            );
-            const sig = ethers.utils.splitSignature(signature);
-
-            rList.push(sig.r);
-            sList.push(sig.s);
-            packedV = packedV.or(BigNumber.from(sig.v).shl(vShift));
-
-            vShift += 8;
-        }
-
-        await this.validator.batchValidate(
+        const [rList, sList, packedV] = prepareSignature(
+            this.keeperPrivates,
+            this.validator.address,
+            this.recipient._address,
             receiptId,
-            [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
+            this.amount,
+            this.txId,
+            this.height
+        );
+
+        const res = await this.validator.batchValidate(
+            [this.recipient._address, receiptId, this.amount, this.txId, this.height],
             this.keepers,
             rList,
             sList,
             packedV
         );
-
-        for (let i = 0; i < this.keepers.length; i++) {
-            expect(await this.validator.verified(receiptId)).to.be.true;
-        }
+        expect(res).to.be.true;
     });
 
-    it("reverted with nonce outdated", async () => {
-        const receiptId = new BN(4444);
-        const rList = [];
-        const sList = [];
-        let vShift = 0;
-        let packedV = BigNumber.from(0);
+    // it("reverted with nonce outdated", async () => {
+    //     const receiptId = new BN(4444);
+    //     const rList = [];
+    //     const sList = [];
+    //     let vShift = 0;
+    //     let packedV = BigNumber.from(0);
 
-        for (let i = 0; i < this.keepers.length; i++) {
-            const signature = await sign(
-                this.keeperPrivates[i],
-                this.validator.address,
-                this.recipient._address,
-                receiptId,
-                this.amount,
-                this.txId,
-                this.height
-            );
-            const sig = ethers.utils.splitSignature(signature);
+    //     for (let i = 0; i < this.keepers.length; i++) {
+    //         const signature = await sign(
+    //             this.keeperPrivates[i],
+    //             this.validator.address,
+    //             this.recipient._address,
+    //             receiptId,
+    //             this.amount,
+    //             this.txId,
+    //             this.height
+    //         );
+    //         const sig = ethers.utils.splitSignature(signature);
 
-            rList.push(sig.r);
-            sList.push(sig.s);
-            packedV = packedV.or(BigNumber.from(sig.v).shl(vShift));
+    //         rList.push(sig.r);
+    //         sList.push(sig.s);
+    //         packedV = packedV.or(BigNumber.from(sig.v).shl(vShift));
 
-            vShift += 8;
-        }
+    //         vShift += 8;
+    //     }
 
-        await this.validator.batchValidate(
-            receiptId,
-            [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
-            this.keepers,
-            rList,
-            sList,
-            packedV
-        );
+    //     await this.validator.batchValidate(
+    //         {
+    //             recipient: this.recipient,
+    //             receiptId: receiptId,
+    //             amount: this.amount,
+    //             txId: this.txId,
+    //             height: this.height,
+    //         },
+    //         this.keepers,
+    //         rList,
+    //         sList,
+    //         packedV
+    //     );
 
-        await expectRevert(
-            this.validator.batchValidate(
-                receiptId,
-                [this.recipientBytes32, this.amountBytes32, this.txId, this.heightBytes32],
-                this.keepers,
-                rList,
-                sList,
-                packedV
-            ),
-            "already verified"
-        );
-    });
+    //     await expectRevert(
+    //         this.validator.batchValidate(
+    //             {
+    //                 recipient: this.recipient,
+    //                 receiptId: receiptId,
+    //                 amount: this.amount,
+    //                 txId: this.txId,
+    //                 height: this.height,
+    //             },
+    //             this.keepers,
+    //             rList,
+    //             sList,
+    //             packedV
+    //         ),
+    //         "already verified"
+    //     );
+    // });
 });

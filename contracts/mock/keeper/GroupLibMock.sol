@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
+pragma experimental ABIEncoderV2;
 
 import {IAssetMeta} from "../../interface/IAssetMeta.sol";
 import {GroupLib} from "../../keeper/GroupLib.sol";
@@ -25,17 +26,7 @@ contract GroupLibMock {
         return GroupLib.nGroups(_map);
     }
 
-    function getGroupInfo(uint256 _id)
-        public
-        view
-        returns (
-            uint256 required,
-            uint256 maxSatoshi,
-            uint256 currSatoshi,
-            string memory btcAddress,
-            address[] memory keepers
-        )
-    {
+    function getGroupInfo(uint256 _id) public view returns (GroupLib.Group memory) {
         return GroupLib.getGroupInfo(_map, _id);
     }
 

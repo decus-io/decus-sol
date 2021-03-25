@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 library ReceiptLib {
     enum Status {
@@ -29,30 +30,9 @@ library ReceiptLib {
     function getReceiptInfo(ReceiptMap storage _map, uint256 receiptId)
         internal
         view
-        returns (
-            uint256 id,
-            address user,
-            uint256 groupId,
-            uint256 amountInSatoshi,
-            uint256 createTimestamp,
-            bytes32 txId,
-            uint256 height,
-            uint256 status,
-            string memory btcAddress
-        )
+        returns (Receipt memory)
     {
-        Receipt storage r = _map.receipts[receiptId];
-        return (
-            r.id,
-            r.user,
-            r.groupId,
-            r.amountInSatoshi,
-            r.createTimestamp,
-            r.txId,
-            r.height,
-            uint256(r.status),
-            r.btcAddress
-        );
+        return _map.receipts[receiptId];
     }
 
     function getUserAddress(ReceiptMap storage _map, uint256 receiptId)

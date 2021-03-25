@@ -40,11 +40,12 @@ contract("ReceiptLib", (accounts) => {
         expect(info.user).to.equal(user1);
         expect(info.groupId).to.be.bignumber.equal(this.groupId);
         expect(info.amountInSatoshi).to.be.bignumber.equal(this.amount);
-        expect(info.txId).to.be.bignumber.equal("");
+        expect(info.txId).to.be.bignumber.equal(
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
         expect(info.height).to.be.bignumber.equal("0");
         expect(info.btcAddress).to.be.bignumber.equal("");
         expect(info.createTimestamp).to.be.bignumber.not.equal(new BN(0));
-        // expect(info).to.deep.equal({id: this.receiptId,});
     });
 
     describe("state", () => {

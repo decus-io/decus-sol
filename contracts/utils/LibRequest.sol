@@ -5,33 +5,24 @@ import "./LibEIP712.sol";
 
 contract LibRequest is LibEIP712 {
     string private constant ORDER_TYPE =
-        "MintRequest(address recipient,uint256 nonce,uint256 amount,bytes32 txId,uint256 height)";
+        "MintRequest(address recipient,uint256 receiptId,uint256 amount,bytes32 txId,uint256 height)";
     bytes32 private constant ORDER_TYPEHASH = keccak256(abi.encodePacked(ORDER_TYPE));
 
     // solhint-disable max-line-length
     struct MintRequest {
         address recipient; // Address that created the request.
-        uint256 nonce; // Arbitrary number to facilitate uniqueness of the request's hash.
+        uint256 receiptId; // Arbitrary number to facilitate uniqueness of the request's hash.
         uint256 amount;
         bytes32 txId;
         uint256 height;
     }
 
-    function getMintRequestHash(bytes32[] calldata data, uint256 nonce)
+    function getMintRequestHash(MintRequest memory request)
         internal
         view
         returns (bytes32 requestHash)
     {
-        MintRequest memory request =
-            MintRequest({
-                recipient: address(uint256(data[0])),
-                nonce: nonce,
-                amount: uint256(data[1]),
-                txId: data[2],
-                height: uint256(data[3])
-            });
-        requestHash = hashEIP712Message(hashMintRequest(request));
-        return requestHash;
+        return hashEIP712Message(hashMintRequest(request));
     }
 
     function hashMintRequest(MintRequest memory request) private pure returns (bytes32 result) {
@@ -40,7 +31,7 @@ contract LibRequest is LibEIP712 {
                 abi.encode(
                     ORDER_TYPEHASH,
                     request.recipient,
-                    request.nonce,
+                    request.receiptId,
                     request.amount,
                     request.txId,
                     request.height

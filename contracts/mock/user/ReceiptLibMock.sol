@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
+pragma experimental ABIEncoderV2;
 
 import {ReceiptLib} from "../../user/ReceiptLib.sol";
 
@@ -9,21 +10,7 @@ contract ReceiptLibMock {
 
     using ReceiptLib for ReceiptLib.ReceiptMap;
 
-    function getReceiptInfo(uint256 receiptId)
-        public
-        view
-        returns (
-            uint256 id,
-            address user,
-            uint256 groupId,
-            uint256 amountInSatoshi,
-            uint256 createTimestamp,
-            bytes32 txId,
-            uint256 height,
-            uint256 status,
-            string memory btcAddress
-        )
-    {
+    function getReceiptInfo(uint256 receiptId) public view returns (ReceiptLib.Receipt memory) {
         return _map.getReceiptInfo(receiptId);
     }
 

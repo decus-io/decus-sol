@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -33,6 +34,10 @@ contract ReceiptController is AccessControl {
     ReceiptLib.ReceiptMap receipts;
     Counters.Counter private _id_gen;
     mapping(uint256 => uint256) group2receipt; //TODO: use groupid and user address as key
+
+    function getReceiptInfo(uint256 receiptId) external view returns (ReceiptLib.Receipt memory) {
+        return ReceiptLib.getReceiptInfo(receipts, receiptId);
+    }
 
     function getUserAddress(uint256 receiptId) external view returns (address) {
         return ReceiptLib.getUserAddress(receipts, receiptId);

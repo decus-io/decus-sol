@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -49,17 +50,7 @@ contract GroupRegistry is AccessControl {
         return groups.isGroupKeeper(_id, _keeper);
     }
 
-    function getGroupInfo(uint256 _id)
-        external
-        view
-        returns (
-            uint256 required,
-            uint256 maxSatoshi,
-            uint256 currSatoshi,
-            string memory btcAddress,
-            address[] memory keepers
-        )
-    {
+    function getGroupInfo(uint256 _id) external view returns (GroupLib.Group memory) {
         return groups.getGroupInfo(_id);
     }
 

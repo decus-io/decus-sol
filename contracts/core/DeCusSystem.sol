@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
@@ -9,22 +10,23 @@ import {EBTC} from "../tokens/EBTC.sol";
 import {DeCus} from "../tokens/DeCus.sol";
 import {BTCUtils} from "../utils/BTCUtils.sol";
 import {SignatureValidator} from "../utils/SignatureValidator.sol";
+import {LibRequest} from "../utils/LibRequest.sol";
 
 // TODO: refactor to import interface only
 import {GroupRegistry} from "../keeper/GroupRegistry.sol";
 import {ReceiptController} from "../user/ReceiptController.sol";
 import {KeeperRegistry} from "../keeper/KeeperRegistry.sol";
 
-contract DeCusSystem is AccessControl, Pausable {
+contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
     using SafeMath for uint256;
 
-    event MintRequest(
+    event MintRequested(
         uint256 indexed groupId,
         uint256 indexed receiptId,
         address indexed from,
         uint256 amountInSatoshi
     );
-    event MintReceived(uint256 indexed groupId);
+    event MintVerified(uint256 indexed receiptId);
 
     // const
     uint256 public constant MINT_REQUEST_GRACE_PERIOD = 24 hours;
@@ -34,7 +36,7 @@ contract DeCusSystem is AccessControl, Pausable {
     GroupRegistry public groupRegistry;
     KeeperRegistry public keeperRegistry;
     ReceiptController public receiptController;
-    SignatureValidator signatureValidator;
+    mapping(uint256 => bool) mintVerified; // receipt id
 
     constructor() public {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -46,8 +48,7 @@ contract DeCusSystem is AccessControl, Pausable {
         EBTC _ebtc,
         KeeperRegistry _keeperRegistry,
         GroupRegistry _groupRegistry,
-        ReceiptController _receipts,
-        SignatureValidator _validator
+        ReceiptController _receipts
     ) external {
         // TODO: add timelock
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
@@ -56,7 +57,6 @@ contract DeCusSystem is AccessControl, Pausable {
         keeperRegistry = _keeperRegistry;
         groupRegistry = _groupRegistry;
         receiptController = _receipts;
-        signatureValidator = _validator;
     }
 
     function addGroup(
@@ -111,24 +111,27 @@ contract DeCusSystem is AccessControl, Pausable {
         uint256 _receiptId =
             receiptController.depositRequest(_msgSender(), _groupId, _amountInSatoshi);
 
-        emit MintRequest(_groupId, _receiptId, _msgSender(), _amountInSatoshi);
+        emit MintRequested(_groupId, _receiptId, _msgSender(), _amountInSatoshi);
     }
 
     function verifyMint(
-        uint256 receiptId,
-        bytes32[] calldata data, // recipient, amount, txId, height
+        LibRequest.MintRequest memory request,
         address[] calldata keepers, // keepers must be in ascending orders
         bytes32[] calldata r,
         bytes32[] calldata s,
         uint256 packedV
     ) public {
         // any one can submit proof of deposit
+        require(!mintVerified[request.receiptId], "receipt already verified");
 
-        _verifyDeposit(receiptId, data, keepers, r, s, packedV);
+        _verifyDeposit(request.receiptId, request, keepers, r, s, packedV);
+        mintVerified[request.receiptId] = true;
 
-        _approveDeposit(receiptId, data[2], uint256(data[3]));
+        _approveDeposit(request.receiptId, request.txId, request.height);
 
-        _mintToUser(receiptId);
+        _mintToUser(request.receiptId);
+
+        emit MintVerified(request.receiptId);
     }
 
     // function revokeMintRequest(uint256 _receiptId, uint256 _keeperId) public {
@@ -173,24 +176,26 @@ contract DeCusSystem is AccessControl, Pausable {
 
     function _verifyDeposit(
         uint256 receiptId,
-        bytes32[] calldata data,
+        LibRequest.MintRequest memory request,
         address[] calldata keepers,
         bytes32[] calldata r,
         bytes32[] calldata s,
         uint256 packedV
-    ) internal {
+    ) internal view returns (bool) {
         require(
-            receiptController.getUserAddress(receiptId) == address(uint256(data[0])),
+            receiptController.getUserAddress(receiptId) == request.recipient,
             "recipient not match"
         );
         require(
-            receiptController.getAmountInSatoshi(receiptId) == uint256(data[1]),
+            receiptController.getAmountInSatoshi(receiptId) == request.amount,
             "receipt amount not match"
         );
         uint256 groupId = receiptController.getGroupId(receiptId);
         require(_satisfyGroupKeepers(groupId, keepers), "not satified group keepers");
 
-        signatureValidator.batchValidate(receiptId, data, keepers, r, s, packedV);
+        batchValidate(request, keepers, r, s, packedV);
+
+        return true;
     }
 
     function _approveDeposit(
@@ -233,6 +238,8 @@ contract DeCusSystem is AccessControl, Pausable {
     }
 
     function verifyBurn(uint256 receiptId) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
+
         receiptController.withdrawCompleted(receiptId);
     }
 

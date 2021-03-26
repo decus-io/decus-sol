@@ -8,7 +8,7 @@ const DeCusSystem = artifacts.require("DeCusSystem");
 const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
 const KEEPER_ADMIN_ROLE = web3.utils.soliditySha3("KEEPER_ADMIN_ROLE");
 const GROUP_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
-const RECEIPT_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
+const RECEIPT_ADMIN_ROLE = web3.utils.soliditySha3("RECEIPT_ADMIN_ROLE");
 
 const migration = async (deployer, network, accounts) => {
     const decusSystem = await DeCusSystem.deployed();

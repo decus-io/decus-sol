@@ -217,6 +217,8 @@ contract("DeCusSystem", (accounts) => {
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(2)
             );
+            const ebtcBalance = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)));
+            expect(await this.ebtc.balanceOf(recipient)).to.be.bignumber.equal(ebtcBalance);
 
             const amount = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)));
             await this.ebtc.approve(this.decus_system.address, amount, { from: user2 });
@@ -229,6 +231,54 @@ contract("DeCusSystem", (accounts) => {
             await this.decus_system.verifyBurn(receipt2Id, { from: owner });
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(0)
+            );
+        });
+        it("group mint start over", async () => {
+            const amount = group1BtcSatoshiAmount;
+            await this.decus_system.mintRequest(group1Id, amount, { from: user1 });
+
+            const keepers = [this.keepers[0], this.keepers[1]];
+            const privates = [this.keeperPrivates[0], this.keeperPrivates[1]];
+            const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+            const height = new BN("1940801");
+            const recipient = user1;
+            const [rList, sList, packedV] = prepareSignature(
+                privates,
+                this.decus_system.address,
+                recipient,
+                receipt1Id,
+                amount,
+                txId,
+                height
+            );
+
+            await this.decus_system.verifyMint(
+                [recipient, receipt1Id, amount, txId, height],
+                keepers,
+                rList,
+                sList,
+                packedV,
+                {
+                    from: user3,
+                }
+            );
+
+            const ebtcBalance = amount.mul(new BN(10).pow(new BN(10)));
+            expect(await this.ebtc.balanceOf(recipient)).to.be.bignumber.equal(ebtcBalance);
+
+            await this.ebtc.approve(user2, ebtcBalance, { from: user1 });
+            await this.ebtc.transfer(user2, ebtcBalance, { from: user1 });
+
+            await this.ebtc.approve(this.decus_system.address, ebtcBalance, { from: user2 });
+            await this.decus_system.burnRequest(receipt1Id, withdrawBtcAddress, { from: user2 });
+
+            // await advanceTimeAndBlock(0);
+
+            // finish previous
+            await this.decus_system.mintRequest(group1Id, amount, { from: user2 });
+            const receipt2Id = new BN(2);
+            expect(await this.receipts.getWorkingReceiptId(group1Id)).to.be.bignumber.equal(
+                receipt2Id
             );
         });
     });

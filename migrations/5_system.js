@@ -1,5 +1,4 @@
 const DeCusSystem = artifacts.require("DeCusSystem");
-const SignatureValidator = artifacts.require("SignatureValidator");
 
 // ============ Main Migration ============
 
@@ -14,7 +13,4 @@ module.exports = migration;
 async function deployToken(deployer, network, accounts) {
     // system
     await deployer.deploy(DeCusSystem);
-
-    // validator
-    await deployer.deploy(SignatureValidator);
 }

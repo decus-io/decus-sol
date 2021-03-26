@@ -3,7 +3,6 @@ const AssetMeta = artifacts.require("AssetMeta");
 const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
-const SignatureValidator = artifacts.require("SignatureValidator");
 const DeCusSystem = artifacts.require("DeCusSystem");
 
 const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
@@ -37,16 +36,14 @@ const migration = async (deployer, network, accounts) => {
         EBTC.address,
         KeeperRegistry.address,
         GroupRegistry.address,
-        ReceiptController.address,
-        SignatureValidator.address
+        ReceiptController.address
     );
     console.log(
         "DeCusSystem set dependencies: %s %s %s %s %s",
         EBTC.address,
         KeeperRegistry.address,
         GroupRegistry.address,
-        ReceiptController.address,
-        SignatureValidator.address
+        ReceiptController.address
     );
 };
 

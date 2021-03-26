@@ -1,3 +1,6 @@
+const { BN } = require("@openzeppelin/test-helpers");
+const { ethers } = require("ethers");
+
 function advanceTime(time) {
     return new Promise((resolve, reject) => {
         web3.currentProvider.send(
@@ -50,7 +53,7 @@ async function advanceTimeAndBlock(targetTime) {
 }
 
 const sigUtil = require("eth-sig-util");
-function sign(privateKey, verifyingContract, recipient, nonce, amount, txId, height) {
+function sign(privateKey, verifyingContract, recipient, receiptId, amount, txId, height) {
     const domainType = [
         { name: "name", type: "string" },
         { name: "version", type: "string" },
@@ -60,7 +63,7 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount, txId, hei
 
     const mintRequestTypes = [
         { name: "recipient", type: "address" },
-        { name: "nonce", type: "uint256" },
+        { name: "receiptId", type: "uint256" },
         { name: "amount", type: "uint256" },
         { name: "txId", type: "bytes32" },
         { name: "height", type: "uint256" },
@@ -76,7 +79,7 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount, txId, hei
     // The data to sign
     const message = {
         recipient: recipient,
-        nonce: nonce.toString(),
+        receiptId: receiptId.toString(),
         amount: amount.toString(),
         txId: txId,
         height: height.toString(),
@@ -97,7 +100,45 @@ function sign(privateKey, verifyingContract, recipient, nonce, amount, txId, hei
     // return signer._signTypedData(domain, types, value);
 }
 
+function prepareSignature(
+    keeperPrivates,
+    validatorAddress,
+    recipient,
+    receiptId,
+    amount,
+    txId,
+    height
+) {
+    const rList = [];
+    const sList = [];
+
+    let vShift = 0;
+    let packedV = new BN(0);
+    for (let i = 0; i < keeperPrivates.length; i++) {
+        const signature = sign(
+            keeperPrivates[i],
+            validatorAddress,
+            recipient,
+            receiptId,
+            amount,
+            txId,
+            height
+        );
+
+        const sig = ethers.utils.splitSignature(signature);
+
+        rList.push(sig.r);
+        sList.push(sig.s);
+        // const v = new BN(sig.v);
+        packedV = packedV.or(new BN(sig.v).shln(vShift));
+
+        vShift += 8;
+    }
+    return [rList, sList, packedV];
+}
+
 module.exports = {
     advanceTimeAndBlock,
     sign,
+    prepareSignature,
 };

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -26,13 +27,17 @@ contract ReceiptController is AccessControl {
 
     event DepositReceived(uint256 indexed receiptId);
 
-    event WithdrawRequested(uint256 indexed receiptId);
+    event WithdrawRequested(uint256 indexed receiptId, string btcAddress);
 
     event WithdrawCompleted(uint256 indexed receiptId);
 
     ReceiptLib.ReceiptMap receipts;
     Counters.Counter private _id_gen;
     mapping(uint256 => uint256) group2receipt; //TODO: use groupid and user address as key
+
+    function getReceiptInfo(uint256 receiptId) external view returns (ReceiptLib.Receipt memory) {
+        return ReceiptLib.getReceiptInfo(receipts, receiptId);
+    }
 
     function getUserAddress(uint256 receiptId) external view returns (address) {
         return ReceiptLib.getUserAddress(receipts, receiptId);
@@ -122,13 +127,13 @@ contract ReceiptController is AccessControl {
         emit DepositReceived(_receiptId);
     }
 
-    function withdrawRequest(uint256 _receiptId) external {
-        require(_receiptId != 0, "receipt id 0 is not allowed");
+    function withdrawRequest(uint256 receiptId, string memory btcAddress) external {
         require(hasRole(RECEIPT_ADMIN_ROLE, _msgSender()), "require admin role");
+        require(receiptId != 0, "receipt id 0 is not allowed");
 
-        ReceiptLib.withdrawRequest(receipts, _receiptId);
+        ReceiptLib.withdrawRequest(receipts, receiptId, btcAddress);
 
-        emit WithdrawRequested(_receiptId);
+        emit WithdrawRequested(receiptId, btcAddress);
     }
 
     function withdrawCompleted(uint256 _receiptId) external {

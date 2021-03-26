@@ -1,8 +1,7 @@
 const { BN, expectRevert } = require("@openzeppelin/test-helpers");
 const expectEvent = require("@openzeppelin/test-helpers/src/expectEvent");
 const { expect } = require("chai");
-const { ethers } = require("ethers");
-const { advanceTimeAndBlock, sign } = require("../helper");
+const { advanceTimeAndBlock, prepareSignature } = require("../helper");
 
 const WBTC = artifacts.require("WBTC");
 const HBTC = artifacts.require("HBTC");
@@ -14,7 +13,6 @@ const KeeperRegistry = artifacts.require("KeeperRegistry");
 const GroupRegistry = artifacts.require("GroupRegistry");
 const ReceiptController = artifacts.require("ReceiptController");
 const DeCusSystem = artifacts.require("DeCusSystem");
-const SignatureValidator = artifacts.require("SignatureValidator");
 
 /* eslint-disable no-unused-expressions */
 contract("DeCusSystem", (accounts) => {
@@ -42,6 +40,7 @@ contract("DeCusSystem", (accounts) => {
     const group1BtcSatoshiAmount = new BN(200000);
 
     const receipt1Id = new BN(1);
+    const withdrawBtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf3";
 
     beforeEach(async () => {
         // prepare system
@@ -69,7 +68,6 @@ contract("DeCusSystem", (accounts) => {
         this.ebtc = await EBTC.new();
         await this.ebtc.grantRole(MINTER_ROLE, this.decus_system.address);
 
-        this.validator = await SignatureValidator.new();
         this.group_registry = await GroupRegistry.new();
         await this.group_registry.grantRole(GROUP_ADMIN_ROLE, this.decus_system.address);
 
@@ -80,7 +78,6 @@ contract("DeCusSystem", (accounts) => {
             this.keeper_registry.address,
             this.group_registry.address,
             this.receipts.address,
-            this.validator.address,
             { from: owner }
         );
 
@@ -192,42 +189,23 @@ contract("DeCusSystem", (accounts) => {
             expect(await this.receipts.getUserAddress(receipt2Id)).to.equal(user2);
 
             const keepers = [this.keepers[0], this.keepers[1]];
-            const rList = [];
-            const sList = [];
-            let vShift = 0;
-            let packedV = new BN(0);
-            const recipient = user2;
+            const privates = [this.keeperPrivates[0], this.keeperPrivates[1]];
+
             const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
             const height = new BN("1940801");
-            for (let i = 0; i < keepers.length; i++) {
-                const signature = await sign(
-                    this.keeperPrivates[i],
-                    this.validator.address,
-                    recipient,
-                    receipt2Id,
-                    group1BtcSatoshiAmount,
-                    txId,
-                    height
-                );
-
-                const sig = ethers.utils.splitSignature(signature);
-
-                rList.push(sig.r);
-                sList.push(sig.s);
-                // const v = new BN(sig.v);
-                packedV = packedV.or(new BN(sig.v).shln(vShift));
-
-                vShift += 8;
-            }
+            const recipient = user2;
+            const [rList, sList, packedV] = prepareSignature(
+                privates,
+                this.decus_system.address,
+                recipient,
+                receipt2Id,
+                group1BtcSatoshiAmount,
+                txId,
+                height
+            );
 
             await this.decus_system.verifyMint(
-                receipt2Id,
-                [
-                    web3.eth.abi.encodeParameter("address", recipient),
-                    web3.eth.abi.encodeParameter("uint256", group1BtcSatoshiAmount),
-                    txId,
-                    web3.eth.abi.encodeParameter("uint256", height),
-                ],
+                [recipient, receipt2Id, group1BtcSatoshiAmount, txId, height],
                 keepers,
                 rList,
                 sList,
@@ -243,14 +221,96 @@ contract("DeCusSystem", (accounts) => {
             const amount = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)));
             await this.ebtc.approve(this.decus_system.address, amount, { from: user2 });
 
-            await this.decus_system.burnRequest(receipt2Id, { from: user2 });
+            await this.decus_system.burnRequest(receipt2Id, withdrawBtcAddress, { from: user2 });
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(3)
             );
 
-            await this.decus_system.verifyBurn(receipt2Id, "proofplaceholder", { from: user2 });
+            await this.decus_system.verifyBurn(receipt2Id, { from: owner });
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(0)
+            );
+        });
+    });
+
+    describe("mintVerify", () => {
+        beforeEach(async () => {
+            await this.decus_system.mintRequest(group0Id, group0BtcSatoshiAmount, { from: user1 });
+        });
+
+        it("verify misorder", async () => {
+            expect(await this.receipts.getWorkingReceiptId(group0Id)).to.be.bignumber.equal(
+                receipt1Id
+            );
+
+            const keepers = [this.keepers[1], this.keepers[2]];
+            const privates = [this.keeperPrivates[1], this.keeperPrivates[2]];
+            const recipient = user1;
+            const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+            const height = new BN("1940801");
+            const [rList, sList, packedV] = prepareSignature(
+                privates,
+                this.decus_system.address,
+                recipient,
+                receipt1Id,
+                group1BtcSatoshiAmount,
+                txId,
+                height
+            );
+
+            await expectRevert(
+                this.decus_system.verifyMint(
+                    [recipient, receipt1Id, group1BtcSatoshiAmount, txId, height],
+                    keepers,
+                    rList,
+                    sList,
+                    packedV,
+                    {
+                        from: recipient,
+                    }
+                ),
+                "keepers not in ascending orders"
+            );
+        });
+
+        it("verify twice", async () => {
+            const keepers = [this.keepers[2], this.keepers[1]];
+            const privates = [this.keeperPrivates[2], this.keeperPrivates[1]];
+            const recipient = user1;
+            const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+            const height = new BN("1940801");
+            const [rList, sList, packedV] = prepareSignature(
+                privates,
+                this.decus_system.address,
+                recipient,
+                receipt1Id,
+                group1BtcSatoshiAmount,
+                txId,
+                height
+            );
+            await this.decus_system.verifyMint(
+                [recipient, receipt1Id, group1BtcSatoshiAmount, txId, height],
+                keepers,
+                rList,
+                sList,
+                packedV,
+                {
+                    from: recipient,
+                }
+            );
+
+            await expectRevert(
+                this.decus_system.verifyMint(
+                    [recipient, receipt1Id, group1BtcSatoshiAmount, txId, height],
+                    keepers,
+                    rList,
+                    sList,
+                    packedV,
+                    {
+                        from: recipient,
+                    }
+                ),
+                "receipt already verified"
             );
         });
     });
@@ -317,7 +377,7 @@ contract("DeCusSystem", (accounts) => {
             const rsp = await this.decus_system.forceMintRequest(group0Id, group0BtcSatoshiAmount, {
                 from: user3,
             });
-            expectEvent(rsp, "MintRequest", {
+            expectEvent(rsp, "MintRequested", {
                 groupId: group0Id,
                 receiptId: receiptId,
                 from: user3,

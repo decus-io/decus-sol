@@ -20,6 +20,8 @@ contract("ReceiptController", (accounts) => {
 
         this.txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
         this.height = new BN("1940801");
+
+        this.btcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
     });
 
     it("role", async () => {
@@ -78,7 +80,7 @@ contract("ReceiptController", (accounts) => {
                 from: owner,
             });
 
-            await this.controller.withdrawRequest(this.receiptId, { from: owner });
+            await this.controller.withdrawRequest(this.receiptId, this.btcAddress, { from: owner });
 
             await expectRevert(
                 this.controller.depositReceived(this.receiptId, this.txId, this.height),

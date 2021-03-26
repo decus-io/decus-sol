@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
+pragma experimental ABIEncoderV2;
 
 import {ReceiptLib} from "../../user/ReceiptLib.sol";
 
@@ -9,52 +10,56 @@ contract ReceiptLibMock {
 
     using ReceiptLib for ReceiptLib.ReceiptMap;
 
-    function getUserAddress(uint256 _id) public view returns (address) {
-        return _map.getUserAddress(_id);
+    function getReceiptInfo(uint256 receiptId) public view returns (ReceiptLib.Receipt memory) {
+        return _map.getReceiptInfo(receiptId);
     }
 
-    function getAmountInSatoshi(uint256 _id) public view returns (uint256) {
-        return _map.getAmountInSatoshi(_id);
+    function getUserAddress(uint256 receiptId) public view returns (address) {
+        return _map.getUserAddress(receiptId);
     }
 
-    function getReceiptStatus(uint256 _id) public view returns (uint256) {
-        return _map.getReceiptStatus(_id);
+    function getAmountInSatoshi(uint256 receiptId) public view returns (uint256) {
+        return _map.getAmountInSatoshi(receiptId);
     }
 
-    function getGroupId(uint256 _receiptId) public view returns (uint256) {
-        return _map.getGroupId(_receiptId);
+    function getReceiptStatus(uint256 receiptId) public view returns (uint256) {
+        return _map.getReceiptStatus(receiptId);
     }
 
-    function isPending(uint256 _receiptId) public view returns (bool) {
-        return _map.isPending(_receiptId);
+    function getGroupId(uint256 receiptId) public view returns (uint256) {
+        return _map.getGroupId(receiptId);
+    }
+
+    function isPending(uint256 receiptId) public view returns (bool) {
+        return _map.isPending(receiptId);
     }
 
     function depositRequest(
-        uint256 _receiptId,
-        address _user,
-        uint256 _groupId,
-        uint256 _amountSatoshi
+        uint256 receiptId,
+        address user,
+        uint256 groupId,
+        uint256 amountSatoshi
     ) public {
-        _map.depositRequest(_receiptId, _user, _groupId, _amountSatoshi);
+        _map.depositRequest(receiptId, user, groupId, amountSatoshi);
     }
 
-    function receiptRevoked(uint256 _receiptId) public {
-        _map.receiptRevoked(_receiptId);
+    function receiptRevoked(uint256 receiptId) public {
+        _map.receiptRevoked(receiptId);
     }
 
     function depositReceived(
-        uint256 _receiptId,
-        bytes32 _txId,
-        uint256 _height
+        uint256 receiptId,
+        bytes32 txId,
+        uint256 height
     ) public {
-        _map.depositReceived(_receiptId, _txId, _height);
+        _map.depositReceived(receiptId, txId, height);
     }
 
-    function withdrawRequest(uint256 _receiptId) public {
-        _map.withdrawRequest(_receiptId);
+    function withdrawRequest(uint256 receiptId, string memory btcAddress) public {
+        _map.withdrawRequest(receiptId, btcAddress);
     }
 
-    function withdrawCompleted(uint256 _receiptId) public {
-        _map.withdrawCompleted(_receiptId);
+    function withdrawCompleted(uint256 receiptId) public {
+        _map.withdrawCompleted(receiptId);
     }
 }

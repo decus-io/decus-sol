@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -54,19 +55,8 @@ library GroupLib {
         return res;
     }
 
-    function getGroupInfo(GroupMap storage _map, uint256 _id)
-        internal
-        view
-        returns (
-            uint256 required,
-            uint256 maxSatoshi,
-            uint256 currSatoshi,
-            string memory btcAddress,
-            address[] memory keepers
-        )
-    {
-        Group storage g = _map.groups[_map.id2index[_id] - 1];
-        return (g.required, g.maxSatoshi, g.currSatoshi, g.btcAddress, g.keepers);
+    function getGroupInfo(GroupMap storage _map, uint256 _id) internal view returns (Group memory) {
+        return _map.groups[_map.id2index[_id] - 1];
     }
 
     function isGroupEmpty(GroupMap storage _map, uint256 _id) internal view returns (bool) {

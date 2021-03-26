@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 library ReceiptLib {
     enum Status {
@@ -16,13 +17,22 @@ library ReceiptLib {
         uint256 groupId;
         uint256 amountInSatoshi;
         uint256 createTimestamp;
-        Status status;
         bytes32 txId;
         uint256 height;
+        Status status;
+        string btcAddress; // for withdraw
     }
 
     struct ReceiptMap {
         mapping(uint256 => Receipt) receipts; // receiptId to Receipt
+    }
+
+    function getReceiptInfo(ReceiptMap storage _map, uint256 receiptId)
+        internal
+        view
+        returns (Receipt memory)
+    {
+        return _map.receipts[receiptId];
     }
 
     function getUserAddress(ReceiptMap storage _map, uint256 receiptId)
@@ -117,8 +127,12 @@ library ReceiptLib {
         receipt.height = _height;
     }
 
-    function withdrawRequest(ReceiptMap storage _map, uint256 _receiptId) internal {
-        Receipt storage receipt = _map.receipts[_receiptId];
+    function withdrawRequest(
+        ReceiptMap storage _map,
+        uint256 receiptId,
+        string memory btcAddress
+    ) internal {
+        Receipt storage receipt = _map.receipts[receiptId];
 
         require(
             receipt.status == Status.DepositReceived,
@@ -126,6 +140,7 @@ library ReceiptLib {
         );
 
         receipt.status = Status.WithdrawRequested;
+        receipt.btcAddress = btcAddress;
     }
 
     function withdrawCompleted(ReceiptMap storage _map, uint256 _receiptId) internal {

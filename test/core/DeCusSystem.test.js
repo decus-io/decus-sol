@@ -16,7 +16,7 @@ const DeCusSystem = artifacts.require("DeCusSystem");
 
 /* eslint-disable no-unused-expressions */
 contract("DeCusSystem", (accounts) => {
-    const [owner, user1, user2, user3] = accounts;
+    const [owner, user1, user2, user3, smallKeeper] = accounts;
 
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
     const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
@@ -24,20 +24,22 @@ contract("DeCusSystem", (accounts) => {
     const GROUP_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
     const RECEIPT_ADMIN_ROLE = web3.utils.soliditySha3("RECEIPT_ADMIN_ROLE");
 
+    const keeperSatoshi = new BN(2).mul(new BN(10).pow(new BN(5))); // 200000
+    const keeperSatoshiSmall = new BN(10).pow(new BN(4));
     const hbtcMultiplier = new BN(10).pow(new BN(10));
-    const wbtcHolding = new BN(1000);
-    const hbtcHolding = new BN(1000).mul(hbtcMultiplier);
+    const wbtcHolding = keeperSatoshi;
+    const hbtcHolding = keeperSatoshi.mul(hbtcMultiplier);
 
-    const keeperWbtcAmount = new BN(600);
+    const keeperWbtcAmount = keeperSatoshi;
     // const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
 
     const group0Id = new BN(1);
     const group0BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf0";
-    const group0BtcSatoshiAmount = new BN(200000);
+    const group0BtcSatoshiAmount = keeperSatoshi;
 
     const group1Id = new BN(2);
     const group1BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
-    const group1BtcSatoshiAmount = new BN(200000);
+    const group1BtcSatoshiAmount = keeperSatoshi;
 
     const receipt1Id = new BN(1);
     const withdrawBtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf3";
@@ -138,6 +140,32 @@ contract("DeCusSystem", (accounts) => {
         );
         expect(await this.group_registry.getGroupId(group1BtcAddress)).to.be.bignumber.equal(
             group1Id
+        );
+    });
+
+    it("keeper not enough collateral", async () => {
+        const keeper = smallKeeper;
+        const amount = keeperSatoshiSmall;
+        await this.wbtc.mint(keeper, amount);
+
+        await this.wbtc.approve(this.keeper_registry.address, amount, {
+            from: keeper,
+        });
+
+        await this.keeper_registry.addKeeper(keeper, [this.wbtc.address], [amount], {
+            from: keeper,
+        });
+
+        const groupKeepers = [keeper, this.keepers[0]];
+        await expectRevert(
+            this.decus_system.addGroup(
+                this.required,
+                amount,
+                "38aNsdfsdfsdfsdfsdfdsfsdf000",
+                groupKeepers,
+                { from: owner }
+            ),
+            "keepre has not enough collaterl"
         );
     });
 

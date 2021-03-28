@@ -59,6 +59,14 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         emit DependenciesSet(address(asset_meta));
     }
 
+    function getSatoshiValue(address keeper)
+        external
+        view
+        returns (uint256)
+    {
+        return collaterals.getSatoshiValue(keeper);
+    }
+
     function addKeeper(
         address _keeper,
         address[] calldata _assets,

@@ -31,6 +31,7 @@ contract GroupRegistry is AccessControl {
     Counters.Counter private _id_gen;
     GroupLib.GroupMap groups;
     mapping(string => uint256) address2id; // id starts from 1
+    uint256 public minKeeperSatoshi = 10**5;
 
     constructor() public {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -72,6 +73,11 @@ contract GroupRegistry is AccessControl {
 
     function getGroupId(string memory _btcAddress) external view returns (uint256) {
         return address2id[_btcAddress];
+    }
+
+    function setMinKeeperSatoshi(uint256 amountInSatoshi) external {
+        require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require group admin role");
+        minKeeperSatoshi = amountInSatoshi;
     }
 
     function addGroup(

@@ -60,14 +60,22 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
     }
 
     function addGroup(
-        uint256 _required,
-        uint256 _maxSatoshi,
-        string memory _btcAddress,
-        address[] calldata _keepers
+        uint256 required,
+        uint256 maxSatoshi,
+        string memory btcAddress,
+        address[] calldata keepers
     ) public {
         require(hasRole(GROUP_ADMIN_ROLE, _msgSender()), "require admin role");
-        // TODO: check keeper has enough collateral
-        groupRegistry.addGroup(_required, _maxSatoshi, _btcAddress, _keepers);
+
+        uint256 minSatoshi = groupRegistry.minKeeperSatoshi();
+        for (uint256 i = 0; i < keepers.length; i++) {
+            require(
+                keeperRegistry.getSatoshiValue(keepers[i]) >= minSatoshi,
+                "keepre has not enough collaterl"
+            );
+        }
+
+        groupRegistry.addGroup(required, maxSatoshi, btcAddress, keepers);
     }
 
     function deleteGroup(uint256 _id) public {

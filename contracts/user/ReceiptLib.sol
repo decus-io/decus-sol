@@ -76,8 +76,7 @@ library ReceiptLib {
     }
 
     function isPending(ReceiptMap storage _map, uint256 receiptId) internal view returns (bool) {
-        Status status = _map.receipts[receiptId].status;
-        return (status == Status.DepositRequested) || (status == Status.WithdrawRequested);
+        return _map.receipts[receiptId].status == Status.DepositRequested;
     }
 
     function depositRequest(

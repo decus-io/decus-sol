@@ -16,7 +16,7 @@ const DeCusSystem = artifacts.require("DeCusSystem");
 
 /* eslint-disable no-unused-expressions */
 contract("DeCusSystem", (accounts) => {
-    const [owner, user1, user2, user3] = accounts;
+    const [owner, user1, user2, user3, smallKeeper] = accounts;
 
     const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
     const MINTER_ROLE = web3.utils.soliditySha3("MINTER_ROLE");
@@ -24,20 +24,22 @@ contract("DeCusSystem", (accounts) => {
     const GROUP_ADMIN_ROLE = web3.utils.soliditySha3("GROUP_ADMIN_ROLE");
     const RECEIPT_ADMIN_ROLE = web3.utils.soliditySha3("RECEIPT_ADMIN_ROLE");
 
+    const keeperSatoshi = new BN(2).mul(new BN(10).pow(new BN(5))); // 200000
+    const keeperSatoshiSmall = new BN(10).pow(new BN(4));
     const hbtcMultiplier = new BN(10).pow(new BN(10));
-    const wbtcHolding = new BN(1000);
-    const hbtcHolding = new BN(1000).mul(hbtcMultiplier);
+    const wbtcHolding = keeperSatoshi;
+    const hbtcHolding = keeperSatoshi.mul(hbtcMultiplier);
 
-    const keeperWbtcAmount = new BN(600);
+    const keeperWbtcAmount = keeperSatoshi;
     // const keeperHbtcAmount = keeperWbtcAmount.mul(hbtcMultiplier);
 
     const group0Id = new BN(1);
     const group0BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf0";
-    const group0BtcSatoshiAmount = new BN(200000);
+    const group0BtcSatoshiAmount = keeperSatoshi;
 
     const group1Id = new BN(2);
     const group1BtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf";
-    const group1BtcSatoshiAmount = new BN(200000);
+    const group1BtcSatoshiAmount = keeperSatoshi;
 
     const receipt1Id = new BN(1);
     const withdrawBtcAddress = "38aNsdfsdfsdfsdfsdfdsfsdf3";
@@ -141,6 +143,32 @@ contract("DeCusSystem", (accounts) => {
         );
     });
 
+    it("keeper not enough collateral", async () => {
+        const keeper = smallKeeper;
+        const amount = keeperSatoshiSmall;
+        await this.wbtc.mint(keeper, amount);
+
+        await this.wbtc.approve(this.keeper_registry.address, amount, {
+            from: keeper,
+        });
+
+        await this.keeper_registry.addKeeper(keeper, [this.wbtc.address], [amount], {
+            from: keeper,
+        });
+
+        const groupKeepers = [keeper, this.keepers[0]];
+        await expectRevert(
+            this.decus_system.addGroup(
+                this.required,
+                amount,
+                "38aNsdfsdfsdfsdfsdfdsfsdf000",
+                groupKeepers,
+                { from: owner }
+            ),
+            "keepre has not enough collaterl"
+        );
+    });
+
     describe("overall state transition", () => {
         it("round", async () => {
             await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user1 });
@@ -217,6 +245,8 @@ contract("DeCusSystem", (accounts) => {
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(2)
             );
+            const ebtcBalance = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)));
+            expect(await this.ebtc.balanceOf(recipient)).to.be.bignumber.equal(ebtcBalance);
 
             const amount = group1BtcSatoshiAmount.mul(new BN(10).pow(new BN(10)));
             await this.ebtc.approve(this.decus_system.address, amount, { from: user2 });
@@ -229,6 +259,54 @@ contract("DeCusSystem", (accounts) => {
             await this.decus_system.verifyBurn(receipt2Id, { from: owner });
             expect(await this.receipts.getReceiptStatus(receipt2Id)).to.be.bignumber.equal(
                 new BN(0)
+            );
+        });
+        it("group mint start over", async () => {
+            const amount = group1BtcSatoshiAmount;
+            await this.decus_system.mintRequest(group1Id, amount, { from: user1 });
+
+            const keepers = [this.keepers[0], this.keepers[1]];
+            const privates = [this.keeperPrivates[0], this.keeperPrivates[1]];
+            const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+            const height = new BN("1940801");
+            const recipient = user1;
+            const [rList, sList, packedV] = prepareSignature(
+                privates,
+                this.decus_system.address,
+                recipient,
+                receipt1Id,
+                amount,
+                txId,
+                height
+            );
+
+            await this.decus_system.verifyMint(
+                [recipient, receipt1Id, amount, txId, height],
+                keepers,
+                rList,
+                sList,
+                packedV,
+                {
+                    from: user3,
+                }
+            );
+
+            const ebtcBalance = amount.mul(new BN(10).pow(new BN(10)));
+            expect(await this.ebtc.balanceOf(recipient)).to.be.bignumber.equal(ebtcBalance);
+
+            await this.ebtc.approve(user2, ebtcBalance, { from: user1 });
+            await this.ebtc.transfer(user2, ebtcBalance, { from: user1 });
+
+            await this.ebtc.approve(this.decus_system.address, ebtcBalance, { from: user2 });
+            await this.decus_system.burnRequest(receipt1Id, withdrawBtcAddress, { from: user2 });
+
+            // await advanceTimeAndBlock(0);
+
+            // finish previous
+            await this.decus_system.mintRequest(group1Id, amount, { from: user2 });
+            const receipt2Id = new BN(2);
+            expect(await this.receipts.getWorkingReceiptId(group1Id)).to.be.bignumber.equal(
+                receipt2Id
             );
         });
     });

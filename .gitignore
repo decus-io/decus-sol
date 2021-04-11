@@ -7,6 +7,8 @@ yarn-error.log
 
 /contracts/artifacts
 /build
+/artifacts
+/cache
 /coverage
 coverage.json
 .env

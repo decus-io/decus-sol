@@ -95,6 +95,11 @@ contract("GroupRegistry", (accounts) => {
             expect(await this.group_registry.getGroupAllowance(groupId)).to.be.bignumber.equal(
                 amount
             );
+
+            const keeperGroupIdArray = await this.group_registry.getKeeperGroupIds(keeper1);
+            expect(Array.isArray(keeperGroupIdArray)).to.equal(true);
+            expect(keeperGroupIdArray.length).to.equal(1);
+            expect(keeperGroupIdArray[0]).to.be.bignumber.equal(groupId);
         });
 
         it("reject dup id", async () => {

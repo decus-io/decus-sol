@@ -59,6 +59,10 @@ contract GroupRegistry is AccessControl {
         return groups.getGroupInfo(_id);
     }
 
+    function getKeeperGroupIds(address _keeper) external view returns (uint256[] memory) {
+        return groups.getKeeperGroupIds(_keeper);
+    }
+
     function getKeeperGroups(address _keeper, uint256 _start) external view returns (uint256) {
         return groups.getKeeperGroups(_keeper, _start);
     }

@@ -5,7 +5,7 @@ const GroupLibMock = artifacts.require("GroupLibMock");
 
 /* eslint-disable no-unused-expressions */
 contract("GroupLib", (accounts) => {
-    const [, keeper1, keeper2, keeper3] = accounts;
+    const [, keeper1, keeper2, keeper3, notKeeper] = accounts;
 
     beforeEach(async () => {
         this.required = new BN(2);
@@ -156,6 +156,21 @@ contract("GroupLib", (accounts) => {
             expect(await this.lib.getKeeperGroups(keeper2, new BN(1))).to.be.bignumber.equal(
                 new BN(1)
             );
+
+            const keeper1GroupIdArray = await this.lib.getKeeperGroupIds(keeper1);
+            expect(Array.isArray(keeper1GroupIdArray)).to.equal(true);
+            expect(keeper1GroupIdArray.length).to.equal(1);
+            expect(keeper1GroupIdArray[0]).to.be.bignumber.equal(this.groupId);
+
+            const keeper2GroupIdArray = await this.lib.getKeeperGroupIds(keeper2);
+            expect(Array.isArray(keeper2GroupIdArray)).to.equal(true);
+            expect(keeper2GroupIdArray.length).to.equal(2);
+            expect(keeper2GroupIdArray[0]).to.be.bignumber.equal(this.groupId);
+            expect(keeper2GroupIdArray[1]).to.be.bignumber.equal(this.groupId2);
+
+            const notKeeperGroupIdArray = await this.lib.getKeeperGroupIds(notKeeper);
+            expect(Array.isArray(notKeeperGroupIdArray)).to.equal(true);
+            expect(notKeeperGroupIdArray.length).to.equal(0);
         });
 
         it("add dup id", async () => {

@@ -33,6 +33,7 @@
         "fmt": "prettier --ignore-path .gitignore -w .",
         "lint": "eslint --ext .js --ignore-path .gitignore .",
         "coverage": "truffle run coverage --file=\"test/core/DeCusSystem.test.js\" --solcoverjs ./.core.solcover.js",
+        "test": "truffle test",
         "client": "ganache-cli -a 20 -m \"tuition produce fat desk suggest case essence wreck warfare convince razor bless\""
     },
     "keywords": [],

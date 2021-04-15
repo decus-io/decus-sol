@@ -37,6 +37,14 @@ library GroupLib {
         return _map.groups.length;
     }
 
+    function listGroupId(GroupMap storage _map) internal view returns (uint256[] memory) {
+        uint256[] memory idArray = new uint256[](_map.groups.length);
+        for (uint256 i = 0; i < _map.groups.length; i++) {
+            idArray[i] = _map.groups[i].id;
+        }
+        return idArray;
+    }
+
     function getKeeperGroups(
         GroupMap storage _map,
         address _keeper,

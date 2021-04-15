@@ -85,6 +85,11 @@ contract("GroupRegistry", (accounts) => {
                 keepers: this.keepers,
             });
 
+            const groupIdArray = await this.group_registry.listGroupId();
+            expect(Array.isArray(groupIdArray)).to.equal(true);
+            expect(groupIdArray.length).to.equal(1);
+            expect(groupIdArray[0]).to.be.bignumber.equal(groupId);
+
             expect(await this.group_registry.getGroupId(btcAddress)).to.be.bignumber.equal(groupId);
             expect(await this.group_registry.exist(groupId)).to.be.true;
             expect(await this.group_registry.getGroupAllowance(groupId)).to.be.bignumber.equal(

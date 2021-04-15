@@ -43,6 +43,10 @@ contract GroupRegistry is AccessControl {
         return groups.nGroups();
     }
 
+    function listGroupId() external view returns (uint256[] memory) {
+        return groups.listGroupId();
+    }
+
     function exist(uint256 _id) external view returns (bool) {
         return groups.exist(_id);
     }

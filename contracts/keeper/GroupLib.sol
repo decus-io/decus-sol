@@ -37,6 +37,41 @@ library GroupLib {
         return _map.groups.length;
     }
 
+    function listGroupId(GroupMap storage _map) internal view returns (uint256[] memory) {
+        uint256[] memory idArray = new uint256[](_map.groups.length);
+        for (uint256 i = 0; i < _map.groups.length; i++) {
+            idArray[i] = _map.groups[i].id;
+        }
+        return idArray;
+    }
+
+    function getKeeperGroupIds(GroupMap storage _map, address _keeper)
+        internal
+        view
+        returns (uint256[] memory)
+    {
+        bool[] memory boolArray = new bool[](_map.groups.length);
+
+        uint256 count = 0;
+        for (uint256 i = 0; i < _map.groups.length; i++) {
+            uint256 _groupId = _map.groups[i].id;
+            if (isGroupKeeper(_map, _groupId, _keeper)) {
+                boolArray[i] = true;
+                count++;
+            }
+        }
+
+        uint256[] memory idArray = new uint256[](count); // get group count
+        uint256 j = 0;
+        for (uint256 i = 0; i < _map.groups.length; i++) {
+            if (boolArray[i]) {
+                idArray[j] = _map.groups[i].id;
+                j++;
+            }
+        }
+        return idArray;
+    }
+
     function getKeeperGroups(
         GroupMap storage _map,
         address _keeper,

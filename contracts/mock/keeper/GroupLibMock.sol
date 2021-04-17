@@ -30,6 +30,10 @@ contract GroupLibMock {
         return GroupLib.getGroupInfo(_map, _id);
     }
 
+    function getKeeperGroupIds(address _keeper) public view returns (uint256[] memory) {
+        return GroupLib.getKeeperGroupIds(_map, _keeper);
+    }
+
     function getKeeperGroups(address _keeper, uint256 _start) public view returns (uint256) {
         return GroupLib.getKeeperGroups(_map, _keeper, _start);
     }

@@ -43,6 +43,10 @@ contract GroupRegistry is AccessControl {
         return groups.nGroups();
     }
 
+    function listGroupId() external view returns (uint256[] memory) {
+        return groups.listGroupId();
+    }
+
     function exist(uint256 _id) external view returns (bool) {
         return groups.exist(_id);
     }
@@ -53,6 +57,10 @@ contract GroupRegistry is AccessControl {
 
     function getGroupInfo(uint256 _id) external view returns (GroupLib.Group memory) {
         return groups.getGroupInfo(_id);
+    }
+
+    function getKeeperGroupIds(address _keeper) external view returns (uint256[] memory) {
+        return groups.getKeeperGroupIds(_keeper);
     }
 
     function getKeeperGroups(address _keeper, uint256 _start) external view returns (uint256) {

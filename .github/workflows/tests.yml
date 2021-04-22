@@ -1,53 +1,51 @@
 name: Deploy
 
 on:
-    push:
-        branches: [master, dev]
-    pull_request:
-        branches: [master, dev]
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master, dev]
 
-    # Allows you to run this workflow manually from the Actions tab
-    workflow_dispatch:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
-    test:
-        name: Unit Test
-        runs-on: ubuntu-latest
+  test:
+    name: Unit Test
+    runs-on: ubuntu-latest
 
-        steps:
-            - uses: actions/checkout@v2
+    steps:
+      - uses: actions/checkout@v2
 
-            - name: Setup node.js
-              uses: actions/setup-node@v1
-              with:
-                  node-version: "12"
+      - name: Setup node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12"
 
-            - name: Install dependencies
-              run: |
-                  npm install -g truffle
-                  npm install -g ganache-cli
-                  npm install
+      - name: Install dependencies
+        run: |
+          npm ci
 
-            - name: Run ganache
-              run: ganache-cli -a 20 -m "tuition produce fat desk suggest case essence wreck warfare convince razor bless" &
+      - name: Run tests
+        run: npx hardhat test
 
-            - name: Run tests
-              run: truffle test
+  check:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
 
-    check:
-        name: Lint and Format Check
-        runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-        steps:
-            - uses: actions/checkout@v2
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2.1.4
+        with:
+          node-version: 12.x
 
-            - name: Setup Node.js environment
-              uses: actions/setup-node@v2.1.4
-              with:
-                  node-version: 12.x
+      - name: Install dependencies
+        run: npm ci
 
-            - name: Install dependencies
-              run: npm ci
+      - name: Build
+        run: npm run compile
 
-            - name: Check lint and format
-              run: npm run check
+      - name: Check lint and format
+        run: npm run check

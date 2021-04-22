@@ -1,18 +1,16 @@
 module.exports = {
-    env: {
-        es2021: true,
-        node: true,
-        mocha: true,
-    },
-    extends: ["standard", "prettier"],
-    parserOptions: {
-        ecmaVersion: 12,
-        sourceType: "module",
-    },
-    globals: {
-        web3: "readonly",
-        artifacts: "readonly",
-        contract: "readonly",
-    },
-    rules: {},
+  parser: "@typescript-eslint/parser",
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended",
+  ],
+  plugins: ["@typescript-eslint"],
+
+  env: {
+    es2021: true,
+    node: true,
+    mocha: true,
+  },
+  rules: {},
 };

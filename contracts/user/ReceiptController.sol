@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 import {ReceiptLib} from "./ReceiptLib.sol";
@@ -11,7 +9,6 @@ import {ReceiptLib} from "./ReceiptLib.sol";
 contract ReceiptController is AccessControl {
     using ReceiptLib for ReceiptLib.ReceiptMap;
     using Counters for Counters.Counter;
-    using SafeMath for uint256;
 
     bytes32 public constant RECEIPT_ADMIN_ROLE = keccak256("RECEIPT_ADMIN_ROLE");
     uint256 public constant MINT_REQUEST_GRACE_PERIOD = 8 hours;
@@ -69,7 +66,7 @@ contract ReceiptController is AccessControl {
 
     function isStale(uint256 receiptId) external view returns (bool) {
         return
-            ReceiptLib.getCreateTimestamp(receipts, receiptId).add(MINT_REQUEST_GRACE_PERIOD) <
+            ReceiptLib.getCreateTimestamp(receipts, receiptId) + MINT_REQUEST_GRACE_PERIOD <
             block.timestamp;
     }
 
@@ -77,7 +74,7 @@ contract ReceiptController is AccessControl {
         return ReceiptLib.isPending(receipts, receiptId);
     }
 
-    constructor() public {
+    constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _id_gen.increment(); // receipt id starts from 1

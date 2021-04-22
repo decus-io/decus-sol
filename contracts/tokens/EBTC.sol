@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract EBTC is ERC20Burnable, ERC20Pausable, AccessControl {
@@ -14,7 +13,7 @@ contract EBTC is ERC20Burnable, ERC20Pausable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    constructor() public ERC20(_name, _symbol) {
+    constructor() ERC20(_name, _symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 

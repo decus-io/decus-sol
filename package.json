@@ -2,12 +2,12 @@
   "name": "decus-sol",
   "version": "0.0.1",
   "description": "decus solidity contract\r ==============",
-  "main": "truffle-config.js",
+  "main": "hardhat.config.ts",
   "directories": {
     "test": "test"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.4.1"
+    "@openzeppelin/contracts": "^4.0.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -17,6 +17,8 @@
     "@types/chai": "^4.2.16",
     "@types/mocha": "^8.2.2",
     "@types/node": "^14.14.41",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
     "chai": "^4.3.4",
     "eslint": "^7.24.0",
     "eslint-config-prettier": "^7.2.0",
@@ -32,7 +34,9 @@
     "mocha": "^8.3.2",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.10",
+    "ts-generator": "^0.1.1",
     "ts-node": "^9.1.1",
+    "typechain": "^4.0.3",
     "typescript": "^4.2.4"
   },
   "scripts": {

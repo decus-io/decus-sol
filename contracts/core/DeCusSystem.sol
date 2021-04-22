@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 import {EBTC} from "../tokens/EBTC.sol";
 import {DeCus} from "../tokens/DeCus.sol";
@@ -18,8 +16,6 @@ import {ReceiptController} from "../user/ReceiptController.sol";
 import {KeeperRegistry} from "../keeper/KeeperRegistry.sol";
 
 contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
-    using SafeMath for uint256;
-
     event MintRequested(
         uint256 indexed groupId,
         uint256 indexed receiptId,
@@ -42,7 +38,7 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
 
     mapping(address => uint256) public cooldownUntil;
 
-    constructor() public {
+    constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _setupRole(GROUP_ADMIN_ROLE, _msgSender());
@@ -173,7 +169,7 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         uint256 required = groupRegistry.getGroupRequired(groupId);
         require(keepers.length >= required, "not enough keepers");
 
-        uint256 cooldownTime = block.timestamp.add(KEEPER_COOLDOWN);
+        uint256 cooldownTime = block.timestamp + KEEPER_COOLDOWN;
         address last;
         for (uint256 i = 0; i < keepers.length; i++) {
             address k = keepers[i];
@@ -227,7 +223,7 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         address user = receiptController.getUserAddress(_receiptId);
         uint256 amountInSatoshi = receiptController.getAmountInSatoshi(_receiptId);
         // TODO: add fee deduction
-        ebtc.mint(user, amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC()));
+        ebtc.mint(user, amountInSatoshi * BTCUtils.getSatoshiMultiplierForEBTC());
     }
 
     function _revoke(uint256 _groupId, uint256 _receiptId) internal {
@@ -239,7 +235,7 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
     function burnRequest(uint256 receiptId, string memory btcAddress) public {
         // TODO: add fee deduction
         uint256 amountInSatoshi = receiptController.getAmountInSatoshi(receiptId);
-        uint256 amount = amountInSatoshi.mul(BTCUtils.getSatoshiMultiplierForEBTC());
+        uint256 amount = amountInSatoshi * BTCUtils.getSatoshiMultiplierForEBTC();
 
         ebtc.burnFrom(_msgSender(), amount);
 
@@ -259,7 +255,7 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
     }
 
     function ban(address keeper, uint256 banTime) external onlyDefaultAdmin {
-        _cooldown(keeper, block.timestamp.add(banTime));
+        _cooldown(keeper, block.timestamp + banTime);
     }
 
     function _cooldown(address keeper, uint256 cooldownEnd) private {

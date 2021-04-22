@@ -27,16 +27,20 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         uint256 amountInSatoshi
     );
     event MintVerified(uint256 indexed receiptId);
+    event Cooldown(address indexed keeper, uint256 endTime);
 
     // const
     uint256 public constant MINT_REQUEST_GRACE_PERIOD = 24 hours;
     bytes32 public constant GROUP_ADMIN_ROLE = keccak256("GROUP_ADMIN_ROLE");
+    uint256 public constant KEEPER_COOLDOWN = 10 minutes;
 
     EBTC public ebtc;
     GroupRegistry public groupRegistry;
     KeeperRegistry public keeperRegistry;
     ReceiptController public receiptController;
     mapping(uint256 => bool) mintVerified; // receipt id
+
+    mapping(address => uint256) public cooldownUntil;
 
     constructor() public {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -49,10 +53,8 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         KeeperRegistry _keeperRegistry,
         GroupRegistry _groupRegistry,
         ReceiptController _receipts
-    ) external {
+    ) external onlyDefaultAdmin {
         // TODO: add timelock
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
-
         ebtc = _ebtc;
         keeperRegistry = _keeperRegistry;
         groupRegistry = _groupRegistry;
@@ -166,18 +168,21 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
 
     function _satisfyGroupKeepers(uint256 groupId, address[] calldata keepers)
         internal
-        view
         returns (bool)
     {
         uint256 required = groupRegistry.getGroupRequired(groupId);
         require(keepers.length >= required, "not enough keepers");
 
+        uint256 cooldownTime = block.timestamp.add(KEEPER_COOLDOWN);
         address last;
         for (uint256 i = 0; i < keepers.length; i++) {
             address k = keepers[i];
+            require(cooldownUntil[k] <= block.timestamp, "keeper is in cooldown");
             require(k > last, "keepers not in ascending orders");
-            last = k;
             require(groupRegistry.isGroupKeeper(groupId, k), "keeper is not in group");
+
+            _cooldown(k, cooldownTime);
+            last = k;
         }
         return true;
     }
@@ -189,7 +194,7 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         bytes32[] calldata r,
         bytes32[] calldata s,
         uint256 packedV
-    ) internal view returns (bool) {
+    ) internal returns (bool) {
         require(
             receiptController.getUserAddress(receiptId) == request.recipient,
             "recipient not match"
@@ -245,13 +250,25 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         receiptController.withdrawRequest(receiptId, btcAddress);
     }
 
-    function verifyBurn(uint256 receiptId) public {
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "require admin role");
-
+    function verifyBurn(uint256 receiptId) public onlyDefaultAdmin {
         receiptController.withdrawCompleted(receiptId);
     }
 
     function prosecute(uint256 _receiptId) public {
         // TODO: bad behavior report
+    }
+
+    function ban(address keeper, uint256 banTime) external onlyDefaultAdmin {
+        _cooldown(keeper, block.timestamp.add(banTime));
+    }
+
+    function _cooldown(address keeper, uint256 cooldownEnd) private {
+        cooldownUntil[keeper] = cooldownEnd;
+        emit Cooldown(keeper, cooldownEnd);
+    }
+
+    modifier onlyDefaultAdmin() {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "require admin role");
+        _;
     }
 }

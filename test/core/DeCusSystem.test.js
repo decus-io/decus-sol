@@ -1,7 +1,7 @@
 const { BN, expectRevert } = require("@openzeppelin/test-helpers");
 const expectEvent = require("@openzeppelin/test-helpers/src/expectEvent");
 const { expect } = require("chai");
-const { advanceTimeAndBlock, prepareSignature } = require("../helper");
+const { advanceTime, advanceTimeAndBlock, prepareSignature } = require("../helper");
 
 const WBTC = artifacts.require("WBTC");
 const HBTC = artifacts.require("HBTC");
@@ -312,8 +312,11 @@ contract("DeCusSystem", (accounts) => {
     });
 
     describe("mintVerify", () => {
+        const receipt2Id = new BN(2);
+
         beforeEach(async () => {
             await this.decus_system.mintRequest(group0Id, group0BtcSatoshiAmount, { from: user1 });
+            await this.decus_system.mintRequest(group1Id, group1BtcSatoshiAmount, { from: user2 });
         });
 
         it("verify misorder", async () => {
@@ -391,6 +394,97 @@ contract("DeCusSystem", (accounts) => {
                 "receipt already verified"
             );
         });
+
+        it("verify two requests", async () => {
+            const txId = "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
+            const height = new BN("1940801");
+
+            let keepers = [this.keepers[2], this.keepers[1]];
+            let privates = [this.keeperPrivates[2], this.keeperPrivates[1]];
+            let recipient = user1;
+            let [rList, sList, packedV] = prepareSignature(
+                privates,
+                this.decus_system.address,
+                recipient,
+                receipt1Id,
+                group1BtcSatoshiAmount,
+                txId,
+                height
+            );
+            await this.decus_system.verifyMint(
+                [recipient, receipt1Id, group1BtcSatoshiAmount, txId, height],
+                keepers,
+                rList,
+                sList,
+                packedV,
+                {
+                    from: recipient,
+                }
+            );
+
+            keepers = [this.keepers[0], this.keepers[1]];
+            privates = [this.keeperPrivates[0], this.keeperPrivates[1]];
+            recipient = user2;
+            [rList, sList, packedV] = prepareSignature(
+                privates,
+                this.decus_system.address,
+                recipient,
+                receipt2Id,
+                group1BtcSatoshiAmount,
+                txId,
+                height
+            );
+            await expectRevert(
+                this.decus_system.verifyMint(
+                    [recipient, receipt2Id, group1BtcSatoshiAmount, txId, height],
+                    keepers,
+                    rList,
+                    sList,
+                    packedV,
+                    {
+                        from: recipient,
+                    }
+                ),
+                "keeper is in cooldown"
+            );
+
+            let currentTimestamp = (await web3.eth.getBlock("latest")).timestamp;
+            expect((await this.decus_system.cooldownUntil(this.keepers[0])).toNumber()).to.be.equal(
+                0
+            );
+            expect(
+                (await this.decus_system.cooldownUntil(this.keepers[1])).toNumber()
+            ).to.be.approximately(currentTimestamp + 10 * 60, 1);
+            expect(
+                (await this.decus_system.cooldownUntil(this.keepers[2])).toNumber()
+            ).to.be.approximately(currentTimestamp + 10 * 60, 1);
+            const prevTimestamp = (
+                await this.decus_system.cooldownUntil(this.keepers[2])
+            ).toNumber();
+
+            advanceTime(10 * 60 + 1);
+            await this.decus_system.verifyMint(
+                [recipient, receipt2Id, group1BtcSatoshiAmount, txId, height],
+                keepers,
+                rList,
+                sList,
+                packedV,
+                {
+                    from: recipient,
+                }
+            );
+
+            currentTimestamp = (await web3.eth.getBlock("latest")).timestamp;
+            expect(
+                (await this.decus_system.cooldownUntil(this.keepers[0])).toNumber()
+            ).to.be.approximately(currentTimestamp + 10 * 60, 1);
+            expect(
+                (await this.decus_system.cooldownUntil(this.keepers[1])).toNumber()
+            ).to.be.approximately(currentTimestamp + 10 * 60, 1);
+            expect((await this.decus_system.cooldownUntil(this.keepers[2])).toNumber()).to.be.equal(
+                prevTimestamp
+            );
+        });
     });
 
     describe("mint", () => {
@@ -464,6 +558,26 @@ contract("DeCusSystem", (accounts) => {
 
             expect(await this.receipts.getWorkingReceiptId(group0Id)).to.be.bignumber.equal(
                 receiptId
+            );
+        });
+    });
+
+    describe("ban", () => {
+        it("should revert if not admin", async () => {
+            await expectRevert(
+                this.decus_system.ban(this.keepers[0], 60, { from: user1 }),
+                "require admin role"
+            );
+        });
+        it("should ban keeper", async () => {
+            expect(await this.decus_system.cooldownUntil(this.keepers[0])).to.be.bignumber.equal(
+                new BN(0)
+            );
+            await this.decus_system.ban(this.keepers[0], 60, { from: owner });
+            const currentTimestamp = (await web3.eth.getBlock("latest")).timestamp;
+
+            expect(await this.decus_system.cooldownUntil(this.keepers[0])).to.be.bignumber.equal(
+                new BN(currentTimestamp + 60)
             );
         });
     });

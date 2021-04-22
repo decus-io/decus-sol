@@ -138,6 +138,7 @@ function prepareSignature(
 }
 
 module.exports = {
+    advanceTime,
     advanceTimeAndBlock,
     sign,
     prepareSignature,

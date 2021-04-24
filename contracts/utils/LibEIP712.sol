@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.3;
 
 contract LibEIP712 {
     uint256 public chainId;
@@ -31,7 +31,7 @@ contract LibEIP712 {
     // solhint-disable-next-line var-name-mixedcase
     bytes32 public EIP712_DOMAIN_HASH;
 
-    constructor() public {
+    constructor() {
         uint256 id;
         assembly {
             id := chainid()

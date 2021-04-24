@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {IAssetMeta} from "../interface/IAssetMeta.sol";
 import {AssetLib} from "../core/AssetLib.sol";
 
 library CollateralLib {
-    using SafeMath for uint256;
     using AssetLib for AssetLib.Asset;
 
     struct KeeperCollateral {
@@ -38,7 +36,7 @@ library CollateralLib {
             uint256 _index = _map.assets.length;
             _map.assets.push(AssetLib.Asset(_assets[i], _amounts[i]));
             collateral.indexes.push(_index);
-            collateral.satoshi = collateral.satoshi.add(_map.assets[_index].getSatoshiValue(_meta));
+            collateral.satoshi += _map.assets[_index].getSatoshiValue(_meta);
         }
         collateral.exists = true;
     }

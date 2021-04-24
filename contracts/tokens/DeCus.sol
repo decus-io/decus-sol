@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -11,7 +11,7 @@ contract DeCus is ERC20, AccessControl {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor() public ERC20(_name, _symbol) {
+    constructor() ERC20(_name, _symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 

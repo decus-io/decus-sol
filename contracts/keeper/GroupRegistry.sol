@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.3;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
@@ -11,7 +9,6 @@ import {GroupLib} from "./GroupLib.sol";
 contract GroupRegistry is AccessControl {
     using GroupLib for GroupLib.GroupMap;
     using Counters for Counters.Counter;
-    using SafeMath for uint256;
 
     // events
     event GroupAdded(
@@ -33,7 +30,7 @@ contract GroupRegistry is AccessControl {
     mapping(string => uint256) address2id; // id starts from 1
     uint256 public minKeeperSatoshi = 10**5;
 
-    constructor() public {
+    constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _id_gen.increment(); // group id starts from 1

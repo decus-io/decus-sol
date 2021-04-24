@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
-
-import "@openzeppelin/contracts/math/SafeMath.sol";
+pragma solidity ^0.8.3;
 
 library GroupLib {
-    using SafeMath for uint256;
-
     struct Group {
         uint256 id;
         uint256 required;
@@ -17,7 +12,7 @@ library GroupLib {
     }
 
     function allowance(Group storage _group) internal view returns (uint256) {
-        return _group.maxSatoshi.sub(_group.currSatoshi);
+        return _group.maxSatoshi - _group.currSatoshi;
     }
 
     using GroupLib for GroupLib.Group;
@@ -135,7 +130,7 @@ library GroupLib {
         uint256 amountSatoshi
     ) internal {
         Group storage g = _map.groups[_map.id2index[_id] - 1];
-        uint256 _currSatoshi = g.currSatoshi.add(amountSatoshi);
+        uint256 _currSatoshi = g.currSatoshi + amountSatoshi;
         require(_currSatoshi <= g.maxSatoshi, "amount exceed max allowance");
         g.currSatoshi = _currSatoshi;
     }
@@ -146,8 +141,7 @@ library GroupLib {
         uint256 amountSatoshi
     ) internal {
         Group storage g = _map.groups[_map.id2index[_id] - 1];
-        g.currSatoshi = g.currSatoshi.sub(amountSatoshi);
-        // SafeMath ensures no overflow
+        g.currSatoshi -= amountSatoshi;
     }
 
     function fillGroupSatoshi(GroupMap storage _map, uint256 _id) internal {

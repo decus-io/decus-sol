@@ -1,17 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockBTC is ERC20 {
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint8 decimals
-    ) public ERC20(name, symbol) {
-        _setupDecimals(decimals);
-    }
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
     function mint(address account, uint256 amount) public {
         _mint(account, amount);
@@ -23,13 +17,17 @@ contract MockBTC is ERC20 {
 }
 
 contract WBTC is MockBTC {
-    constructor() public MockBTC("Wrapped Bitcoin", "WBTC", 8) {}
+    constructor() MockBTC("Wrapped Bitcoin", "WBTC") {}
+
+    function decimals() public pure override returns (uint8) {
+        return 8;
+    }
 }
 
 contract HBTC is MockBTC {
-    constructor() public MockBTC("Huobi BTC", "HBTC", 18) {}
+    constructor() MockBTC("Huobi BTC", "HBTC") {}
 }
 
 contract OtherCoin is MockBTC {
-    constructor() public MockBTC("Other ERC20", "OTHER", 18) {}
+    constructor() MockBTC("Other ERC20", "OTHER") {}
 }

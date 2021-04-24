@@ -1,23 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {AssetMeta} from "../core/AssetMeta.sol";
 import {CollateralLib} from "../keeper/CollateralLib.sol";
 import {IKeeperImport} from "../interface/IKeeperImport.sol";
 
 contract KeeperRegistry is AccessControl, IKeeperImport {
-    using SafeMath for uint256;
     using CollateralLib for CollateralLib.CollateralMap;
-
-    struct Context {
-        uint256 base;
-        uint256 assetLength;
-    }
 
     // events
     event KeeperAdded(address indexed keeper, address[] btc, uint256[] amount);
@@ -47,7 +39,7 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
     }
 
     // write func
-    constructor() public {
+    constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -94,24 +86,24 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
         address[] calldata _keepers,
         uint256[] calldata _keeper_amounts
     ) external override {
-        Context memory context = Context({base: 0, assetLength: _assets.length});
+        uint256 assetLength = _assets.length;
 
         require(
-            _keeper_amounts.length == context.assetLength.mul(_keepers.length),
+            _keeper_amounts.length == assetLength * _keepers.length,
             "amounts length does not match"
         );
 
         // check amounts match
-        uint256[] memory _sum_amounts = new uint256[](context.assetLength);
+        uint256[] memory _sum_amounts = new uint256[](assetLength);
         for (uint256 i = 0; i < _keepers.length; i++) {
-            uint256 base = i.mul(context.assetLength);
-            for (uint256 j = 0; j < context.assetLength; j++) {
-                _sum_amounts[j] = _sum_amounts[j].add(_keeper_amounts[base + j]);
+            uint256 base = i * assetLength;
+            for (uint256 j = 0; j < assetLength; j++) {
+                _sum_amounts[j] += _keeper_amounts[base + j];
             }
         }
 
         // transfer
-        for (uint8 i = 0; i < context.assetLength; i++) {
+        for (uint8 i = 0; i < assetLength; i++) {
             require(
                 IERC20(_assets[i]).transferFrom(_from, address(this), _sum_amounts[i]),
                 "transfer failed"
@@ -120,12 +112,8 @@ contract KeeperRegistry is AccessControl, IKeeperImport {
 
         // add keeper
         for (uint256 i = 0; i < _keepers.length; i++) {
-            context.base = i.mul(context.assetLength);
-            _addKeeper(
-                _keepers[i],
-                _assets,
-                _keeper_amounts[context.base:context.base + context.assetLength]
-            );
+            uint256 base = i * assetLength;
+            _addKeeper(_keepers[i], _assets, _keeper_amounts[base:base + assetLength]);
         }
 
         emit KeeperImported(_from, _assets, _sum_amounts, _keepers, _keeper_amounts);

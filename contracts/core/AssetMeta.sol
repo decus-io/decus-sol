@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.3;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {BTCUtils} from "../utils/BTCUtils.sol";
 import {IAssetMeta} from "../interface/IAssetMeta.sol";
 
 contract AssetMeta is IAssetMeta {
-    using SafeMath for uint256;
-
     // struct
     struct Asset {
         address token; // contract address
@@ -19,7 +16,7 @@ contract AssetMeta is IAssetMeta {
 
     mapping(address => Asset) public assets;
 
-    constructor(address[] memory _assets) public {
+    constructor(address[] memory _assets) {
         for (uint8 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
             uint256 decimal = ERC20(asset).decimals();

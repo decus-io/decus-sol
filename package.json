@@ -48,7 +48,8 @@
     "deploy": "npx hardhat deploy",
     "deploy:kovan": "npx hardhat deploy --network kovan",
     "verify:kovan": "npx hardhat etherscan-verify --network kovan",
-    "test": "REPORT_GAS=1 npx hardhat test"
+    "test:gas": "REPORT_GAS=1 npx hardhat test",
+    "test": "npx hardhat test"
   },
   "keywords": [],
   "author": "decus",

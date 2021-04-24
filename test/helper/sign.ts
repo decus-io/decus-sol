@@ -5,7 +5,7 @@ export const signMintRequest = async (
   wallet: Wallet,
   verifyingContract: string,
   recipient: string,
-  receiptId: number,
+  receiptId: string,
   amount: number,
   txId: string,
   height: number,
@@ -29,7 +29,7 @@ export const signMintRequest = async (
 
   const data = {
     recipient: recipient,
-    receiptId: receiptId.toString(),
+    receiptId: receiptId,
     amount: amount.toString(),
     txId: txId,
     height: height.toString(),
@@ -43,7 +43,7 @@ export const signBatch = async (
   keepers: Wallet[],
   validatorAddress: string,
   recipient: string,
-  receiptId: number,
+  receiptId: string,
   amount: number,
   txId: string,
   height: number,

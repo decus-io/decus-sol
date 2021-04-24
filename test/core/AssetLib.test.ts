@@ -12,10 +12,10 @@ describe("AssetLib", () => {
   let hbtc: HBTC;
   let wbtc: WBTC;
   let meta: AssetMeta;
-  let lib: AssetLibMock;
+  let assetLib: AssetLibMock;
 
   beforeEach(async () => {
-    ({hbtc, wbtc, meta, lib} = await setup());
+    ({ hbtc, wbtc, meta, assetLib } = await setup());
 
     hbtc_multiplier = BigNumber.from(10).pow(await hbtc.decimals());
     wbtc_multiplier = BigNumber.from(10).pow(await wbtc.decimals());
@@ -27,8 +27,10 @@ describe("AssetLib", () => {
       const satoshiAmount = btcAmount.mul(satoshi_multiplier);
       const amount = btcAmount.mul(hbtc_multiplier);
 
-      await lib.setAsset(hbtc.address, amount);
-      expect(await lib.getSatoshiValue(meta.address)).to.equal(satoshiAmount);
+      await assetLib.setAsset(hbtc.address, amount);
+      expect(await assetLib.getSatoshiValue(meta.address)).to.equal(
+        satoshiAmount
+      );
     });
 
     it("wbtc", async () => {
@@ -36,8 +38,10 @@ describe("AssetLib", () => {
       const satoshiAmount = btcAmount.mul(satoshi_multiplier);
       const amount = btcAmount.mul(wbtc_multiplier);
 
-      await lib.setAsset(wbtc.address, amount);
-      expect(await lib.getSatoshiValue(meta.address)).to.equal(satoshiAmount);
+      await assetLib.setAsset(wbtc.address, amount);
+      expect(await assetLib.getSatoshiValue(meta.address)).to.equal(
+        satoshiAmount
+      );
     });
     // TODO: other coin
   });

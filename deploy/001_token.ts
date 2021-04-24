@@ -4,19 +4,18 @@ import { getContractOrDeploy } from "../test/helper/deploy";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
-
   const network = hre.network.name;
-  console.log("Network", network);
-  const { deploy, execute } = deployments;
   const { deployer, wbtcAddr, hbtcAddr } = await getNamedAccounts();
 
-  await deploy("EBTC", {
+  console.log("Network", network);
+
+  await deployments.deploy("EBTC", {
     from: deployer,
     args: [],
     log: true,
   });
 
-  await deploy("DeCus", {
+  await deployments.deploy("DeCus", {
     from: deployer,
     args: [],
     log: true,
@@ -38,7 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       deployer
     );
 
-    await deploy("OtherCoin", {
+    await deployments.deploy("OtherCoin", {
       from: deployer,
       args: [],
       log: true,
@@ -49,29 +48,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     useAsset = [wbtc.address];
   }
 
-  await deploy("AssetMeta", {
+  await deployments.deploy("AssetMeta", {
     from: deployer,
     args: [useAsset],
     log: true,
   });
 
-  await deploy("AssetLib", {
+  await deployments.deploy("AssetLib", {
     from: deployer,
     args: [],
     log: true,
   });
 
-  await deploy("AssetLibMock", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
-  await deploy("CollateralLib", {
+  await deployments.deploy("CollateralLib", {
     from: deployer,
     args: [],
     log: true,
   });
 };
+
 export default func;
 func.tags = ["Token"];

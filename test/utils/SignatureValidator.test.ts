@@ -7,14 +7,14 @@ import { SignatureValidator } from "../../build/typechain";
 
 describe("SignatureValidator", () => {
   let recipient: Signer;
-  let keepers = [
+  let validator: SignatureValidator;
+  let chainId: number;
+
+  const keepers = [
     ethers.Wallet.createRandom(),
     ethers.Wallet.createRandom(),
     ethers.Wallet.createRandom(),
   ];
-  let validator: SignatureValidator;
-  let chainId: number;
-
   const amount = 10;
   const txId =
     "0xa1658ce2e63e9f91b6ff5e75c5a69870b04de471f5cd1cc3e53be158b46169bd";
@@ -24,7 +24,7 @@ describe("SignatureValidator", () => {
     chainId = (await ethers.provider.getNetwork()).chainId;
     let users;
     ({ users, validator } = await setup());
-    recipient = users[0];
+    recipient = users[1];
   });
 
   it("reverted with invalid signature", async () => {
@@ -35,7 +35,7 @@ describe("SignatureValidator", () => {
       wrong_signers,
       validator.address,
       await recipient.getAddress(),
-      receiptId,
+      receiptId.toString(),
       amount,
       txId,
       height,
@@ -68,7 +68,7 @@ describe("SignatureValidator", () => {
       signers,
       validator.address,
       await recipient.getAddress(),
-      receiptId,
+      receiptId.toString(),
       amount,
       txId,
       height,

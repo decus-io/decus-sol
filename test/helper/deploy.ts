@@ -12,6 +12,7 @@ import {
   OtherCoin,
   AssetMeta,
   AssetLibMock,
+  SignatureValidator,
 } from "../../build/typechain";
 
 export const getContractOrDeploy = async (
@@ -45,10 +46,13 @@ export const setup = async () => {
     other: (await ethers.getContract("OtherCoin")) as OtherCoin,
     meta: (await ethers.getContract("AssetMeta")) as AssetMeta,
     lib: (await ethers.getContract("AssetLibMock")) as AssetLibMock,
+    validator: (await ethers.getContract(
+      "SignatureValidator"
+    )) as SignatureValidator,
   };
 
   const { owner } = await getNamedAccounts();
-  const users = await getUnnamedAccounts();
+  const users = await ethers.getSigners();
 
   return {
     ...contracts,

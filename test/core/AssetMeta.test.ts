@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 
-import { setup } from "../utils/deploy";
+import { setup } from "../helper/deploy";
 import { WBTC, HBTC, OtherCoin, AssetMeta } from "../../build/typechain";
 
 describe("AssetMeta", () => {

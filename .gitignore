@@ -10,8 +10,6 @@ yarn-error.log
 /coverage
 coverage.json
 .env
-/migrations/99*
-/migrations/a*
 
 #Hardhat files
 cache

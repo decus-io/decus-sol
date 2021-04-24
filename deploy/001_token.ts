@@ -1,31 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers } from "hardhat";
-import { DeploymentsExtension } from "hardhat-deploy/dist/types";
-import { getWbtcAddress } from "../scripts/external";
-import { WBTC } from "../build/typechain";
-
-async function getWBTC(
-  deployments: DeploymentsExtension,
-  network: string,
-  deployer: string
-) {
-  const wbtcAddr = getWbtcAddress(network);
-
-  let wbtc;
-  if (wbtcAddr) {
-    wbtc = (await ethers.getContractAt("WBTC", wbtcAddr)) as WBTC;
-  } else {
-    wbtc = await deployments.deploy("WBTC", {
-      from: deployer,
-      args: [],
-      log: true,
-    });
-  }
-
-  console.log(`WBTC address: ${wbtc.address}`);
-  return wbtc;
-}
+import { getContractOrDeploy } from "../test/utils/deploy";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
@@ -33,7 +8,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const network = hre.network.name;
   console.log("Network", network);
   const { deploy, execute } = deployments;
-  const { deployer, faucetSigner } = await getNamedAccounts();
+  const { deployer, wbtcAddr, hbtcAddr } = await getNamedAccounts();
 
   await deploy("EBTC", {
     from: deployer,
@@ -47,11 +22,36 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
-  const wbtc = await getWBTC(deployments, network, deployer);
+  const wbtc = await getContractOrDeploy(
+    wbtcAddr,
+    "WBTC",
+    deployments,
+    deployer
+  );
+
+  let useAsset;
+  if (network == "hardhat") {
+    const hbtc = await getContractOrDeploy(
+      hbtcAddr,
+      "HBTC",
+      deployments,
+      deployer
+    );
+
+    await deploy("OtherCoin", {
+      from: deployer,
+      args: [],
+      log: true,
+    });
+
+    useAsset = [wbtc.address, hbtc.address];
+  } else {
+    useAsset = [wbtc.address];
+  }
 
   await deploy("AssetMeta", {
     from: deployer,
-    args: [[wbtc.address]],
+    args: [useAsset],
     log: true,
   });
 
@@ -68,22 +68,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   await deploy("CollateralLib", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
-  if (network == "mainnet") {
-    return;
-  }
-
-  await deploy("HBTC", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
-  await deploy("OtherCoin", {
     from: deployer,
     args: [],
     log: true,

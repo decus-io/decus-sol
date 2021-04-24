@@ -69,6 +69,18 @@ let config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+    wbtcAddr: {
+      // default: "", // hardhat
+      1: "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", // mainnet
+      3: "0x3448EbBE3ef7d21e4F6bB00EaC27965F9c34c676", // ropsten
+      42: "0x659cE2eF1EC7864f62dA3281DCe729C027773c0C", // kovan
+    },
+    auctionAddr: {
+      // default: "", // hardhat
+      // 1: "",
+      3: "0x7d9eF1e92BFAacA0AdC945960e291906d3BD91B9",
+      43: "0x06E56c880c8a558225A9c74491069a16a8EcE261"
+    }
   },
 };
 

@@ -15,4 +15,3 @@ export const advanceBlock = async (): Promise<unknown> => {
 export const advanceTimeAndBlock = async (time: number): Promise<void> => {
   return ethers.provider.send("evm_mine", [(await currentTime()) + time]);
 };
-

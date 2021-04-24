@@ -26,6 +26,9 @@ jobs:
         run: |
           npm ci
 
+      - name: Build
+        run: npm run compile
+
       - name: Run tests
         run: npx hardhat test
 

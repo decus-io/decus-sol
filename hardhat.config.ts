@@ -79,8 +79,8 @@ let config: HardhatUserConfig = {
       // default: "", // hardhat
       // 1: "",
       3: "0x7d9eF1e92BFAacA0AdC945960e291906d3BD91B9",
-      43: "0x06E56c880c8a558225A9c74491069a16a8EcE261"
-    }
+      43: "0x06E56c880c8a558225A9c74491069a16a8EcE261",
+    },
   },
 };
 

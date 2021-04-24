@@ -15,11 +15,7 @@ describe("AssetLib", () => {
   let lib: AssetLibMock;
 
   beforeEach(async () => {
-    const res = await setup();
-    hbtc = res["hbtc"] as HBTC;
-    wbtc = res["wbtc"] as WBTC;
-    meta = res["meta"] as AssetMeta;
-    lib = res["lib"] as AssetLibMock;
+    ({hbtc, wbtc, meta, lib} = await setup());
 
     hbtc_multiplier = BigNumber.from(10).pow(await hbtc.decimals());
     wbtc_multiplier = BigNumber.from(10).pow(await wbtc.decimals());

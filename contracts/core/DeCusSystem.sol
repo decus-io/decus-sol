@@ -26,7 +26,9 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         address indexed from,
         uint256 amountInSatoshi
     );
+    event CancelMintRequest(uint256 indexed receiptId);
     event MintVerified(uint256 indexed receiptId);
+    event BurnRequested(uint256 indexed receiptId, address indexed user, string btcAddress);
     event Cooldown(address indexed keeper, uint256 endTime);
 
     // const
@@ -164,6 +166,8 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
 
         _revoke(_groupId, _receiptId);
         // TODO: get ETH refunded
+
+        emit CancelMintRequest(_receiptId);
     }
 
     function _satisfyGroupKeepers(uint256 groupId, address[] calldata keepers)
@@ -248,6 +252,8 @@ contract DeCusSystem is AccessControl, Pausable, SignatureValidator {
         groupRegistry.withdrawRequested(_groupId, amountInSatoshi);
 
         receiptController.withdrawRequest(receiptId, btcAddress);
+
+        emit BurnRequested(receiptId, msg.sender, btcAddress);
     }
 
     function verifyBurn(uint256 receiptId) public onlyDefaultAdmin {
